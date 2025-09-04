@@ -57,7 +57,7 @@ const CampaignOverview = () => {
             <h1 className="text-3xl font-bold">خطة الحملة الانتخابية الشاملة</h1>
           </div>
           <p className="text-lg opacity-90 mb-6">
-            الخطة الاستراتيجية للفوز في الانتخابات المحلية - بئر الجير، وهران
+             الخطة الاستراتيجية للفوز في الانتخابات المحلية حي  الونشريس 500 
           </p>
           <div className="flex items-center gap-4">
             <Badge variant="secondary" className="text-sm font-semibold">
