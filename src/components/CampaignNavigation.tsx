@@ -30,6 +30,12 @@ const CampaignNavigation = ({ activeTab, onTabChange }: NavigationProps) => {
       description: "المنسقين وأعضاء الفريق"
     },
     {
+      id: "voters",
+      label: "تتبع الناخبين",
+      icon: Target,
+      description: "قاعدة بيانات الناخبين والتحويل"
+    },
+    {
       id: "budget",
       label: "الميزانية",
       icon: DollarSign,

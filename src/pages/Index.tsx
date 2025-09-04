@@ -3,6 +3,7 @@ import CampaignNavigation from "@/components/CampaignNavigation";
 import CampaignOverview from "@/components/CampaignOverview";
 import CampaignTimeline from "@/components/CampaignTimeline";
 import CampaignTeam from "@/components/CampaignTeam";
+import VoterTracking from "@/components/VoterTracking";
 import CampaignBudget from "@/components/CampaignBudget";
 import CampaignDistricts from "@/components/CampaignDistricts";
 import CampaignStrategy from "@/components/CampaignStrategy";
@@ -18,6 +19,8 @@ const Index = () => {
         return <CampaignTimeline />;
       case "team":
         return <CampaignTeam />;
+      case "voters":
+        return <VoterTracking />;
       case "budget":
         return <CampaignBudget />;
       case "districts":

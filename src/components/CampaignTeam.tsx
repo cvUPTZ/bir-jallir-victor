@@ -64,6 +64,15 @@ const CampaignTeam = () => {
       status: "منسق",
       progress: 45,
       avatar: "/avatars/hamza.jpg"
+    },
+    {
+      name: "موسى",
+      area: "حي عائلة عيسات",
+      team: 3,
+      voters: 50,
+      status: "منسق",
+      progress: 55,
+      avatar: "/avatars/mousa.jpg"
     }
   ];
 
@@ -87,7 +96,21 @@ const CampaignTeam = () => {
   const vacantAreas = [
     { name: "حي ألبيبي مصطفى", votes: 40, urgency: "عالية" },
     { name: "حي ألبيبي الأخير", votes: 50, urgency: "متوسطة" },
-    { name: "حي ألاسبي", votes: 60, urgency: "متوسطة" }
+    { name: "حي ألاسبي", votes: 60, urgency: "متوسطة" },
+    { name: "حي فعوصي", votes: 70, urgency: "عالية" },
+    { name: "حي ألبيبي المحطة", votes: 50, urgency: "متوسطة" },
+    { name: "حي جعفري سيد علي", votes: 100, urgency: "عالية" },
+    { name: "حي جعفري قادري", votes: 50, urgency: "متوسطة" },
+    { name: "حي الباي محمد بلدية", votes: 50, urgency: "متوسطة" },
+    { name: "حي الباي بوعلواش", votes: 50, urgency: "متوسطة" },
+    { name: "حي شبشب", votes: 100, urgency: "عالية" },
+    { name: "حي علي خوجة", votes: 60, urgency: "متوسطة" },
+    { name: "حي حفرات", votes: 60, urgency: "متوسطة" },
+    { name: "حي الشط", votes: 40, urgency: "منخفضة" },
+    { name: "حوش بورحلة", votes: 60, urgency: "متوسطة" },
+    { name: "حوش مرزوق", votes: 40, urgency: "منخفضة" },
+    { name: "حوش عميروش", votes: 30, urgency: "منخفضة" },
+    { name: "حي وسط المدينة", votes: 50, urgency: "متوسطة" }
   ];
 
   const getProgressColor = (progress: number) => {
@@ -235,12 +258,12 @@ const CampaignTeam = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {vacantAreas.map((area, index) => (
               <div key={index} className="border border-warning/20 rounded-lg p-4 bg-warning/5">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium">{area.name}</h3>
-                  <Badge variant={area.urgency === "عالية" ? "destructive" : "secondary"}>
+                  <h3 className="font-medium text-sm">{area.name}</h3>
+                  <Badge variant={area.urgency === "عالية" ? "destructive" : area.urgency === "متوسطة" ? "secondary" : "outline"}>
                     {area.urgency}
                   </Badge>
                 </div>
