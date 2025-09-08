@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Users, Building, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Users, Building, CheckCircle, HelpCircle, UserPlus } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
+// Interfaces
 interface District {
   id: string;
   name_ar: string;
@@ -24,16 +27,64 @@ interface ResidentialSquare {
   surveyed_buildings: number;
 }
 
-interface CensusData {
+interface CensusFormData {
   building_code: string;
   apartment_number: string;
   head_of_household: string;
   phone_number: string;
-  voters_with_cards: number;
-  voters_without_cards: number;
-  total_potential_voters: number;
+  has_voting_card: 'yes' | 'no' | null;
   notes: string;
 }
+
+// Helper component for the usage guide
+const UsageGuide = () => (
+  <Dialog>
+    <DialogTrigger asChild>
+      <Button variant="outline" size="icon">
+        <HelpCircle className="w-4 h-4" />
+      </Button>
+    </DialogTrigger>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>دليل استخدام صفحة الإحصاء</DialogTitle>
+        <DialogDescription>
+          اتبع هذه الخطوات لتسجيل ناخب جديد:
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4" dir="rtl">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">1</div>
+          <div>
+            <h4 className="font-semibold">اختر المنطقة</h4>
+            <p className="text-sm text-muted-foreground">ابدأ باختيار الحي، ثم المربع السكني، وأخيراً رقم العمارة من القوائم المنسدلة.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">2</div>
+          <div>
+            <h4 className="font-semibold">املأ بيانات الناخب</h4>
+            <p className="text-sm text-muted-foreground">أدخل رقم الشقة (إجباري)، الاسم الكامل للناخب، ورقم هاتفه.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">3</div>
+          <div>
+            <h4 className="font-semibold">حدد حالة بطاقة الانتخاب</h4>
+            <p className="text-sm text-muted-foreground">اختر "نعم" إذا كان الناخب يملك بطاقة انتخاب، أو "لا" إذا لم يكن يملكها.</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">4</div>
+          <div>
+            <h4 className="font-semibold">حفظ البيانات</h4>
+            <p className="text-sm text-muted-foreground">بعد التأكد من صحة جميع البيانات، اضغط على زر "حفظ بيانات الناخب" لإتمام العملية.</p>
+          </div>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+);
+
 
 const Census = () => {
   const [districts, setDistricts] = useState<District[]>([]);
@@ -41,57 +92,38 @@ const Census = () => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedSquare, setSelectedSquare] = useState<string>('');
   const [selectedBuilding, setSelectedBuilding] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState<CensusData>({
+  const [formData, setFormData] = useState<CensusFormData>({
     building_code: '',
     apartment_number: '',
     head_of_household: '',
     phone_number: '',
-    voters_with_cards: 0,
-    voters_without_cards: 0,
-    total_potential_voters: 0,
+    has_voting_card: null,
     notes: ''
   });
 
   const loadDistricts = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('districts')
-        .select('id, name_ar, name_fr')
-        .order('name_ar');
-
+      const { data, error } = await supabase.from('districts').select('id, name_ar, name_fr').order('name_ar');
       if (error) throw error;
       setDistricts(data || []);
     } catch (error) {
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({
-        variant: "destructive",
-        title: "خطأ في تحميل الأحياء",
-        description: message,
-      });
+      toast({ variant: "destructive", title: "خطأ في تحميل الأحياء", description: message });
     }
   }, [toast]);
 
   const loadSquares = useCallback(async (districtId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('residential_squares')
-        .select('id, square_number, building_codes, total_buildings, surveyed_buildings')
-        .eq('district_id', districtId)
-        .order('square_number');
-
+      // RLS ensures only assigned squares are fetched
+      const { data, error } = await supabase.from('residential_squares').select('id, square_number, building_codes, total_buildings, surveyed_buildings').eq('district_id', districtId).order('square_number');
       if (error) throw error;
       setSquares(data || []);
     } catch (error) {
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({
-        variant: "destructive",
-        title: "خطأ في تحميل المربعات السكنية",
-        description: message,
-      });
+      toast({ variant: "destructive", title: "خطأ في تحميل المربعات السكنية", description: message });
     }
   }, [toast]);
 
@@ -101,6 +133,8 @@ const Census = () => {
 
   useEffect(() => {
     if (selectedDistrict) {
+      setSquares([]);
+      setSelectedSquare('');
       loadSquares(selectedDistrict);
     }
   }, [selectedDistrict, loadSquares]);
@@ -111,18 +145,13 @@ const Census = () => {
     }
   }, [selectedBuilding]);
 
-  useEffect(() => {
-    const total = formData.voters_with_cards + formData.voters_without_cards;
-    setFormData(prev => ({ ...prev, total_potential_voters: total }));
-  }, [formData.voters_with_cards, formData.voters_without_cards]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSquare || !selectedBuilding) {
+    if (!selectedSquare || !selectedBuilding || !formData.has_voting_card) {
       toast({
         variant: "destructive",
-        title: "خطأ في البيانات",
-        description: "يرجى اختيار المربع السكني والعمارة",
+        title: "بيانات غير مكتملة",
+        description: "يرجى اختيار المنطقة وملء جميع الحقول الإجبارية.",
       });
       return;
     }
@@ -130,53 +159,47 @@ const Census = () => {
     setSubmitting(true);
 
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not found");
 
-      const { error } = await supabase
-        .from('voter_census')
-        .insert({
-          residential_square_id: selectedSquare,
-          building_code: formData.building_code,
-          apartment_number: formData.apartment_number,
-          head_of_household: formData.head_of_household,
-          phone_number: formData.phone_number,
-          voters_with_cards: formData.voters_with_cards,
-          voters_without_cards: formData.voters_without_cards,
-          total_potential_voters: formData.total_potential_voters,
-          notes: formData.notes,
-          surveyed_by: profile?.id,
-          surveyed_at: new Date().toISOString(),
-          survey_status: 'completed'
-        });
+      const { data: profile } = await supabase.from('profiles').select('id').eq('user_id', user.id).single();
+      if (!profile) throw new Error("Profile not found");
 
+      const dataToInsert = {
+        residential_square_id: selectedSquare,
+        building_code: formData.building_code,
+        apartment_number: formData.apartment_number,
+        head_of_household: formData.head_of_household,
+        phone_number: formData.phone_number,
+        voters_with_cards: formData.has_voting_card === 'yes' ? 1 : 0,
+        voters_without_cards: formData.has_voting_card === 'no' ? 1 : 0,
+        total_potential_voters: 1,
+        notes: formData.notes,
+        surveyed_by: profile.id,
+        surveyed_at: new Date().toISOString(),
+        survey_status: 'completed'
+      };
+
+      const { error } = await supabase.from('voter_census').insert(dataToInsert);
       if (error) throw error;
 
       toast({
-        title: "تم حفظ البيانات بنجاح!",
-        description: "تم إضافة إحصاء الناخبين للعمارة",
+        title: "تم الحفظ بنجاح!",
+        description: "تم تسجيل بيانات الناخب.",
       });
 
       // Reset form
       setFormData({
-        building_code: '',
+        building_code: selectedBuilding,
         apartment_number: '',
         head_of_household: '',
         phone_number: '',
-        voters_with_cards: 0,
-        voters_without_cards: 0,
-        total_potential_voters: 0,
+        has_voting_card: null,
         notes: ''
       });
-      setSelectedBuilding('');
 
-      // Reload squares to update surveyed count
-      if (selectedDistrict) {
-        loadSquares(selectedDistrict);
-      }
+      // Optionally, reload squares to update stats, though this might be slow
+      // if (selectedDistrict) loadSquares(selectedDistrict);
 
     } catch (error) {
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -194,214 +217,118 @@ const Census = () => {
   const availableBuildings = selectedSquareData?.building_codes || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <Card className="border-primary/20">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2 text-2xl text-primary">
-              <Users className="w-6 h-6" />
-              إحصاء بطاقات الانتخاب
-            </CardTitle>
-            <CardDescription>
-              تسجيل بيانات الناخبين حسب العمارات والمربعات السكنية
-            </CardDescription>
-          </CardHeader>
-        </Card>
+    <div className="space-y-6">
+      <Card className="border-primary/20">
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-2xl text-primary">
+                    <Users className="w-6 h-6" />
+                    إحصاء و تسجيل الناخبين
+                </CardTitle>
+                <CardDescription>
+                    تسجيل بيانات الناخبين بشكل فردي حسب العمارات والمربعات السكنية
+                </CardDescription>
+            </div>
+            <UsageGuide />
+        </CardHeader>
+      </Card>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Selection Panel */}
-          <div className="md:col-span-1 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">اختيار المنطقة</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Selection Panel */}
+        <div className="md:col-span-1 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">1. اختيار المنطقة</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>الحي</Label>
+                <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+                  <SelectTrigger><SelectValue placeholder="اختر الحي" /></SelectTrigger>
+                  <SelectContent>{districts.map(d => <SelectItem key={d.id} value={d.id}>{d.name_ar}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              {selectedDistrict && (
                 <div className="space-y-2">
-                  <Label>الحي</Label>
-                  <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر الحي" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {districts.map((district) => (
-                        <SelectItem key={district.id} value={district.id}>
-                          {district.name_ar}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                  <Label>المربع السكني</Label>
+                  <Select value={selectedSquare} onValueChange={setSelectedSquare}>
+                    <SelectTrigger><SelectValue placeholder="اختر المربع" /></SelectTrigger>
+                    <SelectContent>{squares.length > 0 ? squares.map(s => <SelectItem key={s.id} value={s.id}>المربع {s.square_number}</SelectItem>) : <SelectItem value="none" disabled>لا توجد مربعات معينة</SelectItem>}</SelectContent>
                   </Select>
                 </div>
+              )}
 
-                {selectedDistrict && (
+              {selectedSquare && (
+                <div className="space-y-2">
+                  <Label>العمارة</Label>
+                  <Select value={selectedBuilding} onValueChange={setSelectedBuilding}>
+                    <SelectTrigger><SelectValue placeholder="اختر العمارة" /></SelectTrigger>
+                    <SelectContent>{availableBuildings.map(b => <SelectItem key={b} value={b}>عمارة {b}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Census Form */}
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                2. بيانات الناخب
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>المربع السكني</Label>
-                    <Select value={selectedSquare} onValueChange={setSelectedSquare}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر المربع السكني" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {squares.map((square) => (
-                          <SelectItem key={square.id} value={square.id}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>المربع السكني {square.square_number}</span>
-                              <Badge variant={square.surveyed_buildings === square.total_buildings ? "default" : "secondary"}>
-                                {square.surveyed_buildings}/{square.total_buildings}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="apartment_number">رقم الشقة</Label>
+                    <Input id="apartment_number" value={formData.apartment_number} onChange={e => setFormData(p => ({ ...p, apartment_number: e.target.value }))} placeholder="رقم الشقة" required />
                   </div>
-                )}
-
-                {selectedSquare && (
                   <div className="space-y-2">
-                    <Label>العمارة</Label>
-                    <Select value={selectedBuilding} onValueChange={setSelectedBuilding}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="اختر العمارة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableBuildings.map((building) => (
-                          <SelectItem key={building} value={building}>
-                            عمارة {building}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="head_of_household">الاسم الكامل</Label>
+                    <Input id="head_of_household" value={formData.head_of_household} onChange={e => setFormData(p => ({ ...p, head_of_household: e.target.value }))} placeholder="اسم الناخب الكامل" required />
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
 
-            {selectedSquareData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building className="w-5 h-5" />
-                    إحصائيات المربع
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>إجمالي العمارات</span>
-                    <Badge variant="outline">{selectedSquareData.total_buildings}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>تم المسح</span>
-                    <Badge variant="default">{selectedSquareData.surveyed_buildings}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>متبقي</span>
-                    <Badge variant="secondary">
-                      {selectedSquareData.total_buildings - selectedSquareData.surveyed_buildings}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone_number">رقم الهاتف (اختياري)</Label>
+                  <Input id="phone_number" value={formData.phone_number} onChange={e => setFormData(p => ({ ...p, phone_number: e.target.value }))} placeholder="رقم هاتف الناخب" type="tel" />
+                </div>
 
-          {/* Census Form */}
-          <div className="md:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5" />
-                  بيانات الإحصاء
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>رقم الشقة (اختياري)</Label>
-                      <Input
-                        value={formData.apartment_number}
-                        onChange={(e) => setFormData(prev => ({ ...prev, apartment_number: e.target.value }))}
-                        placeholder="رقم الشقة"
-                        dir="rtl"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>رب البيت</Label>
-                      <Input
-                        value={formData.head_of_household}
-                        onChange={(e) => setFormData(prev => ({ ...prev, head_of_household: e.target.value }))}
-                        placeholder="اسم رب البيت"
+                <div className="space-y-3">
+                    <Label>هل يحوز على بطاقة انتخاب؟</Label>
+                    <RadioGroup
                         required
-                        dir="rtl"
-                      />
-                    </div>
-                  </div>
+                        value={formData.has_voting_card || ''}
+                        onValueChange={(value: 'yes' | 'no') => setFormData(p => ({ ...p, has_voting_card: value }))}
+                        className="flex gap-4"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="has-card-yes" />
+                            <Label htmlFor="has-card-yes">نعم</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="has-card-no" />
+                            <Label htmlFor="has-card-no">لا</Label>
+                        </div>
+                    </RadioGroup>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label>رقم الهاتف</Label>
-                    <Input
-                      value={formData.phone_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-                      placeholder="رقم الهاتف"
-                      type="tel"
-                      dir="rtl"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">ملاحظات</Label>
+                  <Textarea id="notes" value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} placeholder="أي ملاحظات إضافية..." rows={3} />
+                </div>
 
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>عدد الحائزين على بطاقة</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={formData.voters_with_cards}
-                        onChange={(e) => setFormData(prev => ({ ...prev, voters_with_cards: parseInt(e.target.value) || 0 }))}
-                        className="text-center"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>عدد غير الحائزين على بطاقة</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={formData.voters_without_cards}
-                        onChange={(e) => setFormData(prev => ({ ...prev, voters_without_cards: parseInt(e.target.value) || 0 }))}
-                        className="text-center"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>إجمالي الناخبين المحتملين</Label>
-                      <Input
-                        type="number"
-                        value={formData.total_potential_voters}
-                        readOnly
-                        className="text-center bg-muted"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>ملاحظات</Label>
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="أي ملاحظات إضافية..."
-                      rows={3}
-                      dir="rtl"
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={submitting || !selectedSquare || !selectedBuilding}
-                  >
-                    {submitting ? "جاري الحفظ..." : "حفظ البيانات"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+                <Button type="submit" className="w-full" disabled={submitting || !selectedSquare || !selectedBuilding}>
+                  {submitting ? "جاري الحفظ..." : "حفظ بيانات الناخب"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
