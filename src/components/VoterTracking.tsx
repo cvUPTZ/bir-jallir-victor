@@ -13,13 +13,13 @@ const VoterTracking = () => {
       const { data, error } = await supabase.from("voter_census").select("survey_status");
       if (error) throw new Error(error.message);
       
+      // Process the data to create pipeline stages
       const stages = [
         { stage: 'محتمل', count: data?.filter(d => d.survey_status === 'pending').length || 0, color: 'blue', probability: 25 },
         { stage: 'تم التواصل', count: data?.filter(d => d.survey_status === 'contacted').length || 0, color: 'orange', probability: 50 },
         { stage: 'مؤيد', count: data?.filter(d => d.survey_status === 'accepted').length || 0, color: 'green', probability: 75 },
         { stage: 'مؤكد', count: data?.filter(d => d.survey_status === 'confirmed').length || 0, color: 'campaign-success', probability: 90 }
       ];
-      
       return stages;
     },
   });
@@ -29,26 +29,20 @@ const VoterTracking = () => {
     queryFn: async () => {
       const { data: squares, error: squaresError } = await supabase
         .from("residential_squares")
-        .select("id, square_number, building_codes, assigned_representative_id");
+        .select("*, profiles(full_name, phone)")
+        .not('assigned_representative_id', 'eq', null);
       
       if (squaresError) throw new Error(squaresError.message);
       
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name, phone");
-      
-      if (profilesError) throw new Error(profilesError.message);
-      
       const { data: census, error: censusError } = await supabase
         .from("voter_census")
-        .select("residential_square_id, total_potential_voters, voters_with_cards, voters_without_cards, survey_status");
+        .select("*");
       
       if (censusError) throw new Error(censusError.message);
       
-      return (squares || []).map(square => {
-        const manager = profiles?.find(p => p.id === square.assigned_representative_id);
+      // Process the data to create voter database view
+      const processed = squares?.map(square => {
         const squareCensus = census?.filter(c => c.residential_square_id === square.id) || [];
-        
         return {
           square_number: square.square_number,
           building_codes: square.building_codes,
@@ -57,33 +51,62 @@ const VoterTracking = () => {
           without_cards: squareCensus.reduce((sum, c) => sum + (c.voters_without_cards || 0), 0),
           contacted: squareCensus.filter(c => c.survey_status === 'contacted').length,
           accepted: squareCensus.filter(c => c.survey_status === 'accepted').length,
-          manager: manager?.full_name || 'غير معين',
-          manager_phone: manager?.phone || ''
+          manager: square.profiles?.full_name || 'غير محدد',
+          manager_phone: square.profiles?.phone || ''
         };
-      });
+      }) || [];
+      
+      return processed;
     },
   });
 
   const { data: coordinatorProgress, isLoading: isLoadingCoordinator } = useQuery({
     queryKey: ["coordinatorProgress"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("full_name, assigned_district")
-        .eq('role', 'representative')
-        .not('assigned_district', 'is', null);
+        .select("*")
+        .eq("role", "representative");
       
-      if (error) throw new Error(error.message);
+      if (profilesError) throw new Error(profilesError.message);
       
-      return (data || []).map(coord => ({
-        name: coord.full_name,
-        area: coord.assigned_district,
-        progress: Math.floor(Math.random() * 100),
-        target: 100,
-        contacted: Math.floor(Math.random() * 50),
-        accepted: Math.floor(Math.random() * 30),
-        rejected: Math.floor(Math.random() * 10)
-      }));
+      const { data: squares, error: squaresError } = await supabase
+        .from("residential_squares")
+        .select("*");
+      
+      if (squaresError) throw new Error(squaresError.message);
+      
+      const { data: census, error: censusError } = await supabase
+        .from("voter_census")
+        .select("*");
+      
+      if (censusError) throw new Error(censusError.message);
+      
+      // Process coordinator progress
+      const processed = profiles?.map(profile => {
+        const assignedSquares = squares?.filter(s => s.assigned_representative_id === profile.id) || [];
+        const squareCensus = census?.filter(c => 
+          assignedSquares.some(s => s.id === c.residential_square_id)
+        ) || [];
+        
+        const target = assignedSquares.length * 100;
+        const contacted = squareCensus.filter(c => c.survey_status === 'contacted').length;
+        const accepted = squareCensus.filter(c => c.survey_status === 'accepted').length;
+        const rejected = squareCensus.filter(c => c.survey_status === 'rejected').length;
+        const progress = target > 0 ? Math.round((squareCensus.length / target) * 100) : 0;
+        
+        return {
+          name: profile.full_name,
+          area: profile.assigned_district || 'غير محدد',
+          target,
+          contacted,
+          accepted,
+          rejected,
+          progress
+        };
+      }) || [];
+      
+      return processed;
     },
   });
 
@@ -222,7 +245,6 @@ const VoterTracking = () => {
                       ))}
                     </div>
                   </div>
-                  {/* The status is not available in the view, so it's removed for now */}
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -262,9 +284,9 @@ const VoterTracking = () => {
                 <div className="mt-3">
                   <div className="flex justify-between text-sm mb-1">
                     <span>معدل التحويل</span>
-                    <span>{square.contacted && square.contacted > 0 ? Math.round((square.accepted || 0 / square.contacted) * 100) : 0}%</span>
+                    <span>{square.contacted && square.contacted > 0 ? Math.round(((square.accepted || 0) / square.contacted) * 100) : 0}%</span>
                   </div>
-                  <Progress value={square.contacted && square.contacted > 0 ? Math.round((square.accepted || 0 / square.contacted) * 100) : 0} className="h-2" />
+                  <Progress value={square.contacted && square.contacted > 0 ? Math.round(((square.accepted || 0) / square.contacted) * 100) : 0} className="h-2" />
                 </div>
               </div>
             ))}

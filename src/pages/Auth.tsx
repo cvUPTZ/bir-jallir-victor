@@ -24,31 +24,14 @@ const Auth = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return; // No user logged in
 
-      // Fetch the user's profile from the 'profiles' table
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) {
-        throw new Error('Could not fetch user profile. Please contact support.');
-      }
-      
       // On successful login, always redirect to the home page.
       // The home page will then decide which dashboard to show.
       navigate('/home');
     } catch (error) {
-      const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: message,
-      });
-      // Fallback to the auth page itself on error, so the user can retry.
-      navigate('/');
+      console.error('Auth check error:', error);
+      // Stay on auth page if there's an error
     }
-  }, [navigate, toast]);
+  }, [navigate]);
 
   useEffect(() => {
     // Check if a user is already logged in when the component mounts

@@ -21,7 +21,7 @@ const CampaignTeam = () => {
           .from('profiles')
           .select('full_name, assigned_district')
           .eq('role', 'representative')
-          .not('assigned_district', 'is', null);
+          .not('assigned_district', 'eq', null);
 
         const { data: vacant, error: vacantError } = await supabase
           .from('districts')
