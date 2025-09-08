@@ -4,10 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import Layout from "./components/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Census from "./pages/Census";
+import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AdminRoute from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -19,14 +23,20 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* The Auth component is now the root page */}
             <Route path="/" element={<Auth />} />
             
-            {/* The Index (Dashboard) component is now at /dashboard */}
-            <Route path="/dashboard" element={<Index />} />
-            
-            <Route path="/census" element={<Census />} />
-            
+            {/* Authenticated routes */}
+            <Route element={<Layout />}>
+              <Route path="/dashboard" element={<Index />} />
+              <Route path="/census" element={<Census />} />
+              <Route path="/profile" element={<Profile />} />
+
+              {/* Admin-only route */}
+              <Route element={<AdminRoute />}>
+                <Route path="/admin" element={<Admin />} />
+              </Route>
+            </Route>
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
