@@ -16,8 +16,13 @@ const CampaignOverview = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: overviewData, error: overviewError } = await supabase
-          .rpc('get_campaign_overview');
+        const { data: voterData, error: voterError } = await supabase
+          .from('voter_census')
+          .select('total_potential_voters, voters_with_cards, voters_without_cards');
+        
+        const { data: districtsData, error: districtsError } = await supabase
+          .from('districts')
+          .select('*');
 
         const { data: prioritiesData, error: prioritiesError } = await supabase
           .from('districts')
@@ -26,10 +31,21 @@ const CampaignOverview = () => {
           .order('target_votes', { ascending: false })
           .limit(5);
 
-        if (overviewError) throw overviewError;
+        if (voterError) throw voterError;
+        if (districtsError) throw districtsError;
         if (prioritiesError) throw prioritiesError;
 
-        setStats(overviewData[0]);
+        const totalPotential = (voterData || []).reduce((sum, item) => sum + (item.total_potential_voters || 0), 0);
+        const totalWithCards = (voterData || []).reduce((sum, item) => sum + (item.voters_with_cards || 0), 0);
+        const totalTargetVotes = (districtsData || []).reduce((sum, item) => sum + (item.target_votes || 0), 0);
+        
+        setStats({
+          total_target_votes: totalTargetVotes,
+          total_potential_voters: totalPotential,
+          total_with_cards: totalWithCards,
+          total_districts_count: districtsData?.length || 0,
+          active_districts_count: (districtsData || []).filter((d: any) => d.coordinator_name).length
+        });
         setPriorities(prioritiesData);
       } catch (e) {
         const message = e instanceof Error ? e.message : "An unknown error occurred";

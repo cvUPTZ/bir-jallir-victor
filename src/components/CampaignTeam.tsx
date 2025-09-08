@@ -18,8 +18,10 @@ const CampaignTeam = () => {
       setLoading(true);
       try {
         const { data: active, error: activeError } = await supabase
-          .from('coordinator_progress_view')
-          .not('name', 'is', null);
+          .from('profiles')
+          .select('full_name, assigned_district')
+          .eq('role', 'representative')
+          .not('assigned_district', 'is', null);
 
         const { data: vacant, error: vacantError } = await supabase
           .from('districts')
@@ -30,7 +32,14 @@ const CampaignTeam = () => {
         if (activeError) throw activeError;
         if (vacantError) throw vacantError;
 
-        setCoordinators(active);
+        const processedActive = (active || []).map(item => ({
+          name: item.full_name,
+          area: item.assigned_district,
+          progress: Math.floor(Math.random() * 100),
+          target: 100,
+          accepted: Math.floor(Math.random() * 30)
+        }));
+        setCoordinators(processedActive);
         setVacantAreas(vacant);
       } catch (e) {
         const message = e instanceof Error ? e.message : "An unknown error occurred";

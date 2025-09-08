@@ -252,10 +252,16 @@ const Census = () => {
               {selectedDistrict && (
                 <div className="space-y-2">
                   <Label>المربع السكني</Label>
-                  <Select value={selectedSquare} onValueChange={setSelectedSquare}>
-                    <SelectTrigger><SelectValue placeholder="اختر المربع" /></SelectTrigger>
-                    <SelectContent>{squares.length > 0 ? squares.map(s => <SelectItem key={s.id} value={s.id}>المربع {s.square_number}</SelectItem>) : <SelectItem value="none" disabled>لا توجد مربعات معينة</SelectItem>}</SelectContent>
-                  </Select>
+                   <Select value={selectedSquare} onValueChange={setSelectedSquare}>
+                     <SelectTrigger><SelectValue placeholder="اختر المربع" /></SelectTrigger>
+                     <SelectContent>
+                       {squares.length > 0 ? squares.map(s => (
+                         <SelectItem key={s.id} value={s.id}>المربع {s.square_number}</SelectItem>
+                       )) : (
+                         <SelectItem value="none" disabled>لا توجد مربعات معينة</SelectItem>
+                       )}
+                     </SelectContent>
+                   </Select>
                 </div>
               )}
 

@@ -205,10 +205,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      coordinator_progress_view: {
+        Row: {
+          accepted: number | null
+          area: string | null
+          contacted: number | null
+          name: string | null
+          progress: number | null
+          rejected: number | null
+          target: number | null
+        }
+        Relationships: []
+      }
+      pipeline_stages_view: {
+        Row: {
+          color: string | null
+          count: number | null
+          probability: number | null
+          stage: string | null
+        }
+        Relationships: []
+      }
+      voter_database_view: {
+        Row: {
+          accepted: number | null
+          building_codes: string[] | null
+          contacted: number | null
+          manager: string | null
+          manager_phone: string | null
+          potential: number | null
+          square_number: number | null
+          with_cards: number | null
+          without_cards: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_campaign_overview: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

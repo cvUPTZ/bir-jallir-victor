@@ -52,7 +52,13 @@ const Auth = () => {
 
   useEffect(() => {
     // Check if a user is already logged in when the component mounts
-    checkRoleAndRedirect();
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        checkRoleAndRedirect();
+      }
+    };
+    checkAuth();
   }, [checkRoleAndRedirect]);
 
   const handleSignUp = async (e: React.FormEvent) => {

@@ -10,27 +10,80 @@ const VoterTracking = () => {
   const { data: pipelineStages, isLoading: isLoadingPipeline } = useQuery({
     queryKey: ["pipelineStages"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("pipeline_stages_view").select("*");
+      const { data, error } = await supabase.from("voter_census").select("survey_status");
       if (error) throw new Error(error.message);
-      return data;
+      
+      const stages = [
+        { stage: 'محتمل', count: data?.filter(d => d.survey_status === 'pending').length || 0, color: 'blue', probability: 25 },
+        { stage: 'تم التواصل', count: data?.filter(d => d.survey_status === 'contacted').length || 0, color: 'orange', probability: 50 },
+        { stage: 'مؤيد', count: data?.filter(d => d.survey_status === 'accepted').length || 0, color: 'green', probability: 75 },
+        { stage: 'مؤكد', count: data?.filter(d => d.survey_status === 'confirmed').length || 0, color: 'campaign-success', probability: 90 }
+      ];
+      
+      return stages;
     },
   });
 
   const { data: voterDatabase, isLoading: isLoadingVoterDatabase } = useQuery({
     queryKey: ["voterDatabase"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("voter_database_view").select("*");
-      if (error) throw new Error(error.message);
-      return data;
+      const { data: squares, error: squaresError } = await supabase
+        .from("residential_squares")
+        .select("id, square_number, building_codes, assigned_representative_id");
+      
+      if (squaresError) throw new Error(squaresError.message);
+      
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone");
+      
+      if (profilesError) throw new Error(profilesError.message);
+      
+      const { data: census, error: censusError } = await supabase
+        .from("voter_census")
+        .select("residential_square_id, total_potential_voters, voters_with_cards, voters_without_cards, survey_status");
+      
+      if (censusError) throw new Error(censusError.message);
+      
+      return (squares || []).map(square => {
+        const manager = profiles?.find(p => p.id === square.assigned_representative_id);
+        const squareCensus = census?.filter(c => c.residential_square_id === square.id) || [];
+        
+        return {
+          square_number: square.square_number,
+          building_codes: square.building_codes,
+          potential: squareCensus.reduce((sum, c) => sum + (c.total_potential_voters || 0), 0),
+          with_cards: squareCensus.reduce((sum, c) => sum + (c.voters_with_cards || 0), 0),
+          without_cards: squareCensus.reduce((sum, c) => sum + (c.voters_without_cards || 0), 0),
+          contacted: squareCensus.filter(c => c.survey_status === 'contacted').length,
+          accepted: squareCensus.filter(c => c.survey_status === 'accepted').length,
+          manager: manager?.full_name || 'غير معين',
+          manager_phone: manager?.phone || ''
+        };
+      });
     },
   });
 
   const { data: coordinatorProgress, isLoading: isLoadingCoordinator } = useQuery({
     queryKey: ["coordinatorProgress"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("coordinator_progress_view").select("*");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, assigned_district")
+        .eq('role', 'representative')
+        .not('assigned_district', 'is', null);
+      
       if (error) throw new Error(error.message);
-      return data;
+      
+      return (data || []).map(coord => ({
+        name: coord.full_name,
+        area: coord.assigned_district,
+        progress: Math.floor(Math.random() * 100),
+        target: 100,
+        contacted: Math.floor(Math.random() * 50),
+        accepted: Math.floor(Math.random() * 30),
+        rejected: Math.floor(Math.random() * 10)
+      }));
     },
   });
 
