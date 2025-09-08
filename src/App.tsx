@@ -19,9 +19,14 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+            {/* The Auth component is now the root page */}
+            <Route path="/" element={<Auth />} />
+            
+            {/* The Index (Dashboard) component is now at /dashboard */}
+            <Route path="/dashboard" element={<Index />} />
+            
             <Route path="/census" element={<Census />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
