@@ -18,16 +18,44 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/');
+  // Function to check user role and redirect accordingly
+  const checkRoleAndRedirect = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return; // No user logged in
+
+      // Fetch the user's profile from the 'profiles' table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        throw new Error('Could not fetch user profile. Please contact support.');
       }
-    };
-    checkUser();
-  }, [navigate]);
+      
+      // Redirect based on the role
+      if (profile && profile.role === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/census');
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+      // Fallback to census page on error
+      navigate('/census');
+    }
+  };
+
+  useEffect(() => {
+    // Check if a user is already logged in when the component mounts
+    checkRoleAndRedirect();
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +70,7 @@ const Auth = () => {
           data: {
             full_name: fullName,
             phone: phone,
-            role: 'representative'
+            role: 'representative' // Default role for new sign-ups
           }
         }
       });
@@ -76,7 +104,9 @@ const Auth = () => {
 
       if (error) throw error;
 
-      navigate('/');
+      // After a successful sign-in, check the role and redirect
+      await checkRoleAndRedirect();
+      
     } catch (error: any) {
       toast({
         variant: "destructive",
