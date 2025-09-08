@@ -27,12 +27,12 @@ const App = () => (
             
             {/* Authenticated routes */}
             <Route element={<Layout />}>
-              <Route path="/dashboard" element={<Index />} />
               <Route path="/census" element={<Census />} />
               <Route path="/profile" element={<Profile />} />
 
-              {/* Admin-only route */}
+              {/* Admin-only routes */}
               <Route element={<AdminRoute />}>
+                <Route path="/dashboard" element={<Index />} />
                 <Route path="/admin" element={<Admin />} />
               </Route>
             </Route>
