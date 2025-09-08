@@ -35,12 +35,9 @@ const Auth = () => {
         throw new Error('Could not fetch user profile. Please contact support.');
       }
       
-      // Redirect based on the role
-      if (profile && profile.role === 'admin') {
-        navigate('/dashboard');
-      } else {
-        navigate('/census');
-      }
+      // On successful login, always redirect to the home page.
+      // The home page will then decide which dashboard to show.
+      navigate('/home');
     } catch (error) {
       const message = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
@@ -48,8 +45,8 @@ const Auth = () => {
         title: "Error",
         description: message,
       });
-      // Fallback to census page on error
-      navigate('/census');
+      // Fallback to the auth page itself on error, so the user can retry.
+      navigate('/');
     }
   }, [navigate, toast]);
 
@@ -70,8 +67,7 @@ const Auth = () => {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
-            phone: phone,
-            role: 'representative' // Default role for new sign-ups
+            phone: phone
           }
         }
       });
