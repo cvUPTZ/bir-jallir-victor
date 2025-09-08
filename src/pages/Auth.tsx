@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,7 @@ const Auth = () => {
   const navigate = useNavigate();
 
   // Function to check user role and redirect accordingly
-  const checkRoleAndRedirect = async () => {
+  const checkRoleAndRedirect = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return; // No user logged in
@@ -41,21 +41,22 @@ const Auth = () => {
       } else {
         navigate('/census');
       }
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: message,
       });
       // Fallback to census page on error
       navigate('/census');
     }
-  };
+  }, [navigate, toast]);
 
   useEffect(() => {
     // Check if a user is already logged in when the component mounts
     checkRoleAndRedirect();
-  }, []);
+  }, [checkRoleAndRedirect]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,11 +82,12 @@ const Auth = () => {
         title: "تم التسجيل بنجاح!",
         description: "تحقق من بريدك الإلكتروني للتفعيل",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "خطأ في التسجيل",
-        description: error.message,
+        description: message,
       });
     } finally {
       setLoading(false);
@@ -107,11 +109,12 @@ const Auth = () => {
       // After a successful sign-in, check the role and redirect
       await checkRoleAndRedirect();
       
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "خطأ في تسجيل الدخول",
-        description: error.message,
+        description: message,
       });
     } finally {
       setLoading(false);

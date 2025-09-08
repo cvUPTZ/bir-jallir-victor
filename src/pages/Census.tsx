@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,15 +56,54 @@ const Census = () => {
     notes: ''
   });
 
+  const loadDistricts = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('districts')
+        .select('id, name_ar, name_fr')
+        .order('name_ar');
+
+      if (error) throw error;
+      setDistricts(data || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({
+        variant: "destructive",
+        title: "خطأ في تحميل الأحياء",
+        description: message,
+      });
+    }
+  }, [toast]);
+
+  const loadSquares = useCallback(async (districtId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('residential_squares')
+        .select('id, square_number, building_codes, total_buildings, surveyed_buildings')
+        .eq('district_id', districtId)
+        .order('square_number');
+
+      if (error) throw error;
+      setSquares(data || []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({
+        variant: "destructive",
+        title: "خطأ في تحميل المربعات السكنية",
+        description: message,
+      });
+    }
+  }, [toast]);
+
   useEffect(() => {
     loadDistricts();
-  }, []);
+  }, [loadDistricts]);
 
   useEffect(() => {
     if (selectedDistrict) {
       loadSquares(selectedDistrict);
     }
-  }, [selectedDistrict]);
+  }, [selectedDistrict, loadSquares]);
 
   useEffect(() => {
     if (selectedBuilding) {
@@ -76,43 +115,6 @@ const Census = () => {
     const total = formData.voters_with_cards + formData.voters_without_cards;
     setFormData(prev => ({ ...prev, total_potential_voters: total }));
   }, [formData.voters_with_cards, formData.voters_without_cards]);
-
-  const loadDistricts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('districts')
-        .select('id, name_ar, name_fr')
-        .order('name_ar');
-
-      if (error) throw error;
-      setDistricts(data || []);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "خطأ في تحميل الأحياء",
-        description: error.message,
-      });
-    }
-  };
-
-  const loadSquares = async (districtId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('residential_squares')
-        .select('id, square_number, building_codes, total_buildings, surveyed_buildings')
-        .eq('district_id', districtId)
-        .order('square_number');
-
-      if (error) throw error;
-      setSquares(data || []);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "خطأ في تحميل المربعات السكنية",
-        description: error.message,
-      });
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,11 +178,12 @@ const Census = () => {
         loadSquares(selectedDistrict);
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
         variant: "destructive",
         title: "خطأ في حفظ البيانات",
-        description: error.message,
+        description: message,
       });
     } finally {
       setSubmitting(false);

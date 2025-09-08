@@ -179,7 +179,7 @@ const CampaignDistricts = () => {
                     <Badge variant={getPriorityColor(district.priority)}>
                       {district.priority}
                     </Badge>
-                    <Badge variant={getStatusColor(district.status) as any}>
+                    <Badge variant={getStatusColor(district.status)}>
                       {district.status}
                     </Badge>
                   </div>
