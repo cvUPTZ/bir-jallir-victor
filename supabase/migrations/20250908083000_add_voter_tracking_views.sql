@@ -14,15 +14,15 @@ SELECT
   p.full_name AS manager,
   p.phone AS manager_phone,
   rs.building_codes,
-  SUM(vc.total_potential_voters) AS potential,
-  SUM(vc.voters_with_cards) AS with_cards,
-  SUM(vc.voters_without_cards) AS without_cards,
-  SUM(vc.contacted) AS contacted,
-  SUM(vc.accepted) AS accepted,
-  SUM(vc.rejected) AS rejected
+  COALESCE(SUM(vc.total_potential_voters), 0) AS potential,
+  COALESCE(SUM(vc.voters_with_cards), 0) AS with_cards,
+  COALESCE(SUM(vc.voters_without_cards), 0) AS without_cards,
+  COALESCE(SUM(vc.contacted), 0) AS contacted,
+  COALESCE(SUM(vc.accepted), 0) AS accepted,
+  COALESCE(SUM(vc.rejected), 0) AS rejected
 FROM
   public.residential_squares rs
-  JOIN public.voter_census vc ON rs.id = vc.residential_square_id
+  LEFT JOIN public.voter_census vc ON rs.id = vc.residential_square_id
   LEFT JOIN public.profiles p ON rs.assigned_representative_id = p.id
   LEFT JOIN public.districts d ON rs.district_id = d.id
 GROUP BY
@@ -32,25 +32,33 @@ GROUP BY
 -- This view will power the "Coordinator Performance" section of the UI.
 CREATE OR REPLACE VIEW public.coordinator_progress_view AS
 SELECT
-  d.coordinator_name AS name,
-  d.name_ar AS area,
-  d.target_votes AS target,
-  COALESCE(SUM(vdb.contacted), 0) AS contacted,
-  COALESCE(SUM(vdb.accepted), 0) AS accepted,
-  COALESCE(SUM(vdb.rejected), 0) AS rejected,
-  -- Calculate progress as percentage of contacted vs target. If target is 0, progress is 0.
-  CASE
-    WHEN d.target_votes > 0 THEN (COALESCE(SUM(vdb.contacted), 0) * 100.0 / d.target_votes)
-    ELSE 0
-  END AS progress
+    d.coordinator_name AS name,
+    d.name_ar AS area,
+    d.target_votes AS target,
+    COALESCE(sum.contacted, 0) as contacted,
+    COALESCE(sum.accepted, 0) as accepted,
+    COALESCE(sum.rejected, 0) as rejected,
+    CASE
+        WHEN d.target_votes > 0 THEN (COALESCE(sum.contacted, 0) * 100.0 / d.target_votes)
+        ELSE 0
+    END AS progress
 FROM
-  public.districts d
-  LEFT JOIN public.residential_squares rs ON d.id = rs.district_id
-  LEFT JOIN public.voter_database_view vdb ON rs.id = vdb.residential_square_id
+    public.districts d
+LEFT JOIN (
+    SELECT
+        rs.district_id,
+        SUM(vdb.contacted) as contacted,
+        SUM(vdb.accepted) as accepted,
+        SUM(vdb.rejected) as rejected
+    FROM
+        public.residential_squares rs
+    JOIN
+        public.voter_database_view vdb ON rs.id = vdb.residential_square_id
+    GROUP BY
+        rs.district_id
+) sum ON d.id = sum.district_id
 WHERE
-  d.coordinator_name IS NOT NULL
-GROUP BY
-  d.coordinator_name, d.name_ar, d.target_votes;
+    d.coordinator_name IS NOT NULL;
 
 -- Step 4: Create a view for the overall voter pipeline.
 -- This view will power the "Voter Conversion Funnel" section of the UI.
