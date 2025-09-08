@@ -1,115 +1,64 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Users, Phone, MapPin, CheckCircle, XCircle, Clock, TrendingUp } from "lucide-react";
+import { Users, Phone, MapPin, TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const VoterTracking = () => {
-  const pipelineStages = [
-    {
-      stage: "لم يتم التواصل معه",
-      probability: 10,
-      count: 850,
-      color: "muted"
+  const { data: pipelineStages, isLoading: isLoadingPipeline } = useQuery({
+    queryKey: ["pipelineStages"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("pipeline_stages_view").select("*");
+      if (error) throw new Error(error.message);
+      return data;
     },
-    {
-      stage: "تم التواصل",
-      probability: 50,
-      count: 420,
-      color: "campaign-progress"
-    },
-    {
-      stage: "قبول",
-      probability: 100,
-      count: 680,
-      color: "campaign-success"
-    },
-    {
-      stage: "رفض",
-      probability: 0,
-      count: 150,
-      color: "danger"
-    }
-  ];
+  });
 
-  const voterDatabase = [
-    {
-      square: "المربع السكني 01",
-      buildings: ["A6", "A12", "D3", "A3", "D5", "B8"],
-      withCards: 145,
-      withoutCards: 23,
-      potential: 168,
-      contacted: 120,
-      accepted: 95,
-      rejected: 15,
-      manager: "أحمد محمد",
-      phone: "0555-123-456",
-      status: "مكتمل جزئياً"
+  const { data: voterDatabase, isLoading: isLoadingVoterDatabase } = useQuery({
+    queryKey: ["voterDatabase"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("voter_database_view").select("*");
+      if (error) throw new Error(error.message);
+      return data;
     },
-    {
-      square: "المربع السكني 02", 
-      buildings: ["A7", "A11", "A13", "A2", "D6", "C6"],
-      withCards: 132,
-      withoutCards: 18,
-      potential: 150,
-      contacted: 85,
-      accepted: 70,
-      rejected: 8,
-      manager: "فاطمة أحمد",
-      phone: "0555-234-567",
-      status: "قيد العمل"
-    },
-    {
-      square: "المربع السكني 03",
-      buildings: ["B6", "A10", "B5", "A1", "A25", "A24"],
-      withCards: 98,
-      withoutCards: 12,
-      potential: 110,
-      contacted: 45,
-      accepted: 35,
-      rejected: 5,
-      manager: "محمد علي",
-      phone: "0555-345-678",
-      status: "بداية"
-    },
-    {
-      square: "المربع السكني 11",
-      buildings: ["E5", "D9"],
-      withCards: 89,
-      withoutCards: 15,
-      potential: 104,
-      contacted: 78,
-      accepted: 65,
-      rejected: 8,
-      manager: "خديجة بن سالم",
-      phone: "0555-456-789",
-      status: "متقدم"
-    }
-  ];
+  });
 
-  const coordinatorProgress = [
-    { name: "هشام", area: "حي الونشريس", target: 500, contacted: 420, accepted: 350, rejected: 45, progress: 84 },
-    { name: "منير غزالي", area: "حي السلام", target: 150, contacted: 135, accepted: 95, rejected: 25, progress: 90 },
-    { name: "منير أزرارق", area: "الحي العسكري", target: 70, contacted: 55, accepted: 38, rejected: 12, progress: 79 },
-    { name: "موسى", area: "حي عائلة عيسات", target: 50, contacted: 30, accepted: 22, rejected: 5, progress: 60 },
-    { name: "زاكي", area: "حي محمد مختاري", target: 150, contacted: 110, accepted: 85, rejected: 15, progress: 73 }
-  ];
+  const { data: coordinatorProgress, isLoading: isLoadingCoordinator } = useQuery({
+    queryKey: ["coordinatorProgress"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("coordinator_progress_view").select("*");
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
 
-  const totalPotential = voterDatabase.reduce((sum, square) => sum + square.potential, 0);
-  const totalContacted = voterDatabase.reduce((sum, square) => sum + square.contacted, 0);
-  const totalAccepted = voterDatabase.reduce((sum, square) => sum + square.accepted, 0);
-  const conversionRate = Math.round((totalAccepted / totalContacted) * 100);
+  const totalPotential = voterDatabase?.reduce((sum, square) => sum + (square.potential || 0), 0) || 0;
+  const totalContacted = voterDatabase?.reduce((sum, square) => sum + (square.contacted || 0), 0) || 0;
+  const totalAccepted = voterDatabase?.reduce((sum, square) => sum + (square.accepted || 0), 0) || 0;
+  const conversionRate = totalContacted > 0 ? Math.round((totalAccepted / totalContacted) * 100) : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "مكتمل": return "campaign-success";
-      case "متقدم": return "campaign-success"; 
+      case "متقدم": return "campaign-success";
       case "مكتمل جزئياً": return "campaign-progress";
       case "قيد العمل": return "warning";
       case "بداية": return "danger";
       default: return "muted";
     }
   };
+
+  if (isLoadingPipeline || isLoadingVoterDatabase || isLoadingCoordinator) {
+    return (
+      <div className="space-y-6">
+        <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+        <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+        <Card><CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader><CardContent><Skeleton className="h-96 w-full" /></CardContent></Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -123,7 +72,7 @@ const VoterTracking = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {pipelineStages.map((stage, index) => (
+            {pipelineStages?.map((stage, index) => (
               <div key={index} className="text-center p-4 border rounded-lg">
                 <div className={`text-2xl font-bold text-${stage.color}`}>{stage.count}</div>
                 <div className="text-sm text-muted-foreground mb-2">{stage.stage}</div>
@@ -159,14 +108,14 @@ const VoterTracking = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {coordinatorProgress.map((coord, index) => (
+            {coordinatorProgress?.map((coord, index) => (
               <div key={index} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="font-semibold">{coord.name}</h3>
                     <p className="text-sm text-muted-foreground">{coord.area}</p>
                   </div>
-                  <Badge variant={coord.progress >= 80 ? "default" : coord.progress >= 60 ? "secondary" : "outline"}>
+                  <Badge variant={coord.progress && coord.progress >= 80 ? "default" : coord.progress && coord.progress >= 60 ? "secondary" : "outline"}>
                     {coord.progress}%
                   </Badge>
                 </div>
@@ -190,7 +139,7 @@ const VoterTracking = () => {
                   </div>
                 </div>
                 
-                <Progress value={coord.progress} className="h-2" />
+                <Progress value={coord.progress || 0} className="h-2" />
               </div>
             ))}
           </div>
@@ -207,22 +156,20 @@ const VoterTracking = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {voterDatabase.map((square, index) => (
+            {voterDatabase?.map((square, index) => (
               <div key={index} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold text-lg">{square.square}</h3>
+                    <h3 className="font-semibold text-lg">المربع السكني {square.square_number}</h3>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {square.buildings.map((building, buildingIndex) => (
+                      {square.building_codes?.map((building, buildingIndex) => (
                         <Badge key={buildingIndex} variant="outline" className="text-xs">
                           {building}
                         </Badge>
                       ))}
                     </div>
                   </div>
-                  <Badge variant={getStatusColor(square.status) as any}>
-                    {square.status}
-                  </Badge>
+                  {/* The status is not available in the view, so it's removed for now */}
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -231,11 +178,11 @@ const VoterTracking = () => {
                     <div className="text-xs text-muted-foreground">ناخب محتمل</div>
                   </div>
                   <div className="text-center p-3 bg-muted rounded-lg">
-                    <div className="text-lg font-bold text-campaign-success">{square.withCards}</div>
+                    <div className="text-lg font-bold text-campaign-success">{square.with_cards}</div>
                     <div className="text-xs text-muted-foreground">حائز بطاقة</div>
                   </div>
                   <div className="text-center p-3 bg-muted rounded-lg">
-                    <div className="text-lg font-bold text-warning">{square.withoutCards}</div>
+                    <div className="text-lg font-bold text-warning">{square.without_cards}</div>
                     <div className="text-xs text-muted-foreground">بدون بطاقة</div>
                   </div>
                   <div className="text-center p-3 bg-muted rounded-lg">
@@ -255,16 +202,16 @@ const VoterTracking = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-primary" />
-                    <span className="text-sm">{square.phone}</span>
+                    <span className="text-sm">{square.manager_phone}</span>
                   </div>
                 </div>
 
                 <div className="mt-3">
                   <div className="flex justify-between text-sm mb-1">
                     <span>معدل التحويل</span>
-                    <span>{Math.round((square.accepted / square.contacted) * 100)}%</span>
+                    <span>{square.contacted && square.contacted > 0 ? Math.round((square.accepted || 0 / square.contacted) * 100) : 0}%</span>
                   </div>
-                  <Progress value={Math.round((square.accepted / square.contacted) * 100)} className="h-2" />
+                  <Progress value={square.contacted && square.contacted > 0 ? Math.round((square.accepted || 0 / square.contacted) * 100) : 0} className="h-2" />
                 </div>
               </div>
             ))}
