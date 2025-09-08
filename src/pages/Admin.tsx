@@ -48,37 +48,41 @@ const Admin = () => {
   }, [toast]);
 
   const fetchSquares = useCallback(async (page: number) => {
-    setLoading(true);
-    try {
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
+  setLoading(true);
+  try {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
 
-      const { data, error, count } = await supabase
-        .from('residential_squares')
-        .select(`id, square_number, districts ( name_ar ), profiles ( full_name )`, { count: 'exact' })
-        .order('district_id')
-        .order('square_number')
-        .range(from, to);
+    const { data, error, count } = await supabase
+      .from('residential_squares')
+      .select(`
+        id, 
+        square_number, 
+        districts!residential_squares_district_id_fkey ( name_ar ),
+        profiles!residential_squares_assigned_representative_id_fkey ( full_name )
+      `, { count: 'exact' })
+      .order('district_id')
+      .order('square_number')
+      .range(from, to);
 
-      if (error) throw error;
+    if (error) throw error;
 
-      const formattedSquares = data.map((sq: any) => ({
-        id: sq.id,
-        square_number: sq.square_number,
-        district_name: sq.districts?.name_ar || 'N/A',
-        assigned_to: sq.profiles?.full_name || null,
-      }));
-      setSquares(formattedSquares);
-      setTotalSquares(count || 0);
+    const formattedSquares = data.map((sq: any) => ({
+      id: sq.id,
+      square_number: sq.square_number,
+      district_name: sq.districts?.name_ar || 'N/A',
+      assigned_to: sq.profiles?.full_name || null,
+    }));
+    setSquares(formattedSquares);
+    setTotalSquares(count || 0);
 
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({ variant: "destructive", title: "خطأ في تحميل المربعات", description: message });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "An unknown error occurred.";
+    toast({ variant: "destructive", title: "خطأ في تحميل المربعات", description: message });
+  } finally {
+    setLoading(false);
+  }
+}, [toast]);
   useEffect(() => {
     fetchReps();
     fetchSquares(currentPage);
