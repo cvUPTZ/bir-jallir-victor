@@ -14,7 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      districts: {
+        Row: {
+          coordinator_name: string | null
+          created_at: string
+          id: string
+          name_ar: string
+          name_fr: string | null
+          priority_level: string | null
+          status: string | null
+          target_votes: number | null
+          updated_at: string
+        }
+        Insert: {
+          coordinator_name?: string | null
+          created_at?: string
+          id?: string
+          name_ar: string
+          name_fr?: string | null
+          priority_level?: string | null
+          status?: string | null
+          target_votes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          coordinator_name?: string | null
+          created_at?: string
+          id?: string
+          name_ar?: string
+          name_fr?: string | null
+          priority_level?: string | null
+          status?: string | null
+          target_votes?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          assigned_district: string | null
+          created_at: string
+          full_name: string
+          id: string
+          phone: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_district?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_district?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      residential_squares: {
+        Row: {
+          assigned_representative_id: string | null
+          building_codes: string[] | null
+          created_at: string
+          district_id: string | null
+          id: string
+          square_number: number
+          surveyed_buildings: number | null
+          total_buildings: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_representative_id?: string | null
+          building_codes?: string[] | null
+          created_at?: string
+          district_id?: string | null
+          id?: string
+          square_number: number
+          surveyed_buildings?: number | null
+          total_buildings?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_representative_id?: string | null
+          building_codes?: string[] | null
+          created_at?: string
+          district_id?: string | null
+          id?: string
+          square_number?: number
+          surveyed_buildings?: number | null
+          total_buildings?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "residential_squares_assigned_representative_id_fkey"
+            columns: ["assigned_representative_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "residential_squares_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voter_census: {
+        Row: {
+          apartment_number: string | null
+          building_code: string
+          created_at: string
+          head_of_household: string
+          id: string
+          notes: string | null
+          phone_number: string | null
+          residential_square_id: string
+          survey_status: string | null
+          surveyed_at: string | null
+          surveyed_by: string | null
+          total_potential_voters: number | null
+          updated_at: string
+          voters_with_cards: number | null
+          voters_without_cards: number | null
+        }
+        Insert: {
+          apartment_number?: string | null
+          building_code: string
+          created_at?: string
+          head_of_household: string
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          residential_square_id: string
+          survey_status?: string | null
+          surveyed_at?: string | null
+          surveyed_by?: string | null
+          total_potential_voters?: number | null
+          updated_at?: string
+          voters_with_cards?: number | null
+          voters_without_cards?: number | null
+        }
+        Update: {
+          apartment_number?: string | null
+          building_code?: string
+          created_at?: string
+          head_of_household?: string
+          id?: string
+          notes?: string | null
+          phone_number?: string | null
+          residential_square_id?: string
+          survey_status?: string | null
+          surveyed_at?: string | null
+          surveyed_by?: string | null
+          total_potential_voters?: number | null
+          updated_at?: string
+          voters_with_cards?: number | null
+          voters_without_cards?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voter_census_residential_square_id_fkey"
+            columns: ["residential_square_id"]
+            isOneToOne: false
+            referencedRelation: "residential_squares"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voter_census_surveyed_by_fkey"
+            columns: ["surveyed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
