@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { User, Target, CheckSquare, Building } from 'lucide-react';
@@ -15,7 +15,7 @@ interface AssignedSquare {
 }
 
 const Profile = () => {
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading } = useAuth();
   const [assignedSquares, setAssignedSquares] = useState<AssignedSquare[]>([]);
   const [loading, setLoading] = useState(true);
 
