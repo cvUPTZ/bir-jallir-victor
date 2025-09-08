@@ -1,19 +1,25 @@
+import { useEffect } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
 import { Home, LogOut, User, BarChart, Shield } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Layout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile } = useProfile();
+  const { user, profile, loading, signOut } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/'); // Redirect to login if not authenticated
+    }
+  }, [user, loading, navigate]);
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await signOut();
       toast({
         title: "تم تسجيل الخروج بنجاح",
       });
@@ -28,12 +34,34 @@ const Layout = () => {
     }
   };
 
+  if (loading || !user) {
+    // Display a skeleton loader while auth state is being determined
+    return (
+      <div className="flex min-h-screen" dir="rtl">
+        <aside className="w-64 bg-background border-r p-4 flex flex-col">
+          <Skeleton className="h-6 w-3/4 mb-8" />
+          <div className="flex flex-col space-y-4 flex-grow">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+          <div className="mt-auto">
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </aside>
+        <main className="flex-1 p-6 bg-muted/40">
+          <Skeleton className="h-full w-full" />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen" dir="rtl">
       <aside className="w-64 bg-background border-r p-4 flex flex-col">
         <h2 className="text-xl font-bold text-primary mb-8">القائمة الرئيسية</h2>
         <nav className="flex flex-col space-y-2 flex-grow">
-          <Link to="/dashboard" className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
+          <Link to="/home" className="flex items-center gap-3 p-2 rounded-md hover:bg-muted">
             <BarChart className="w-5 h-5" />
             لوحة التحكم
           </Link>
@@ -48,7 +76,7 @@ const Layout = () => {
           {profile?.role === 'admin' && (
             <Link to="/admin" className="flex items-center gap-3 p-2 rounded-md hover:bg-muted text-primary">
               <Shield className="w-5 h-5" />
-              لوحة التحكم
+              لوحة الإدارة
             </Link>
           )}
         </nav>
