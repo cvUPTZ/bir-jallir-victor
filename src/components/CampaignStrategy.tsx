@@ -262,7 +262,7 @@ const CampaignStrategy = () => {
                     <p className="text-sm text-muted-foreground">{risk.risk}</p>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Badge variant={getRiskLevelColor(risk.level) as any}>
+                    <Badge variant={getRiskLevelColor(risk.level)}>
                       {risk.level}
                     </Badge>
                     <Badge variant={risk.status === "مُدار" ? "default" : "secondary"} className="text-xs">
