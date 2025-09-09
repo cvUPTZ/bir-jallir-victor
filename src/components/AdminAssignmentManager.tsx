@@ -32,8 +32,8 @@ interface Building {
   district_id: string;
   assigned_representative_id: string | null;
   address: string | null;
-  district?: { name_ar: string };
-  representative?: { full_name: string };
+  cities?: { name_ar: string }; // Changed from district to cities
+  profiles?: { full_name: string };
 }
 
 interface ResidentialSquare {
@@ -71,15 +71,16 @@ const AdminAssignmentManager = () => {
       if (repsError) throw repsError;
       setRepresentatives(repsData || []);
 
-      // Fetch districts
+      // Fetch districts/cities - Updated to use cities table
       const { data: districtsData, error: districtsError } = await supabase
-        .from('districts')
+        .from('cities') // Changed from 'districts' to 'cities'
         .select('*')
         .order('name_ar');
       if (districtsError) throw districtsError;
       setDistricts(districtsData || []);
 
     } catch (error) {
+      console.error('Error fetching data:', error);
       const message = error instanceof Error ? error.message : "خطأ في تحميل البيانات";
       toast({ variant: "destructive", title: "خطأ", description: message });
     } finally {
@@ -97,7 +98,7 @@ const AdminAssignmentManager = () => {
         .from('buildings')
         .select(`
           *,
-          districts!inner(name_ar),
+          cities!inner(name_ar),
           profiles(full_name)
         `, { count: 'exact' })
         .order('building_number')
@@ -110,16 +111,17 @@ const AdminAssignmentManager = () => {
       const { data, error, count } = await query;
       if (error) throw error;
 
-      const formattedBuildings = data.map((building: any) => ({
+      const formattedBuildings = data?.map((building: any) => ({
         ...building,
-        district: building.districts,
-        representative: building.profiles
-      }));
+        cities: building.cities, // Keep cities reference
+        profiles: building.profiles
+      })) || [];
 
       setBuildings(formattedBuildings);
       setTotalBuildings(count || 0);
 
     } catch (error) {
+      console.error('Error fetching buildings:', error);
       const message = error instanceof Error ? error.message : "خطأ في تحميل المباني";
       toast({ variant: "destructive", title: "خطأ", description: message });
     } finally {
