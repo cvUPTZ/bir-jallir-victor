@@ -23,7 +23,7 @@ interface City {
 
 interface Building {
   id: string;
-  building_number: number;
+  building_number: string;
   city_id: string;
   assigned_representative_id: string | null;
   address: string | null;
@@ -185,12 +185,12 @@ const AdminAssignmentManager = () => {
 
     try {
       const { error } = await supabase
-  .from('buildings')
-  .insert({
-    building_number: newBuildingNumber,
-    city_id: selectedCity,
-    address: newBuildingAddress || null
-  });
+        .from('buildings')
+        .insert({
+          building_number: newBuildingNumber,
+          city_id: selectedCity,
+          address: newBuildingAddress || null
+        });
 
       if (error) throw error;
 
@@ -224,11 +224,10 @@ const AdminAssignmentManager = () => {
                 <SelectValue placeholder="اختر المدينة..." />
               </SelectTrigger>
               <SelectContent>
-  {/* The placeholder will now act as the "All Cities" option when no city is selected */}
-  {cities.map(city => (
-    <SelectItem key={city.id} value={city.id}>{city.name_ar}</SelectItem>
-  ))}
-</SelectContent>
+                {cities.map(city => (
+                  <SelectItem key={city.id} value={city.id}>{city.name_ar}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
             
             <Dialog open={showAddBuilding} onOpenChange={setShowAddBuilding}>
@@ -259,7 +258,7 @@ const AdminAssignmentManager = () => {
                   <div className="space-y-2">
                     <Label>رقم المبنى</Label>
                     <Input
-                      type="number"
+                      type="text"
                       value={newBuildingNumber}
                       onChange={(e) => setNewBuildingNumber(e.target.value)}
                       placeholder="أدخل رقم المبنى"
