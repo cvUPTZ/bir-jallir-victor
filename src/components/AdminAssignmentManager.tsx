@@ -138,6 +138,10 @@ const AdminAssignmentManager = () => {
     if (selectedDistrict) {
       setCurrentPage(0); // Reset to first page when district changes
       fetchBuildings(0, selectedDistrict);
+    } else {
+      // Clear buildings when no district is selected
+      setBuildings([]);
+      setTotalBuildings(0);
     }
   }, [fetchBuildings, selectedDistrict]);
 
