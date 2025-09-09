@@ -54,9 +54,10 @@ export type Database = {
         Row: {
           address: string | null
           assigned_representative_id: string | null
-          building_number: number
-          city_id: string | null
+          building_code: string | null
+          building_number: string | null
           created_at: string
+          district_id: string | null
           id: string
           surveyed_apartments: number | null
           total_apartments: number | null
@@ -65,9 +66,10 @@ export type Database = {
         Insert: {
           address?: string | null
           assigned_representative_id?: string | null
-          building_number: number
-          city_id?: string | null
+          building_code?: string | null
+          building_number?: string | null
           created_at?: string
+          district_id?: string | null
           id?: string
           surveyed_apartments?: number | null
           total_apartments?: number | null
@@ -76,9 +78,10 @@ export type Database = {
         Update: {
           address?: string | null
           assigned_representative_id?: string | null
-          building_number?: number
-          city_id?: string | null
+          building_code?: string | null
+          building_number?: string | null
           created_at?: string
+          district_id?: string | null
           id?: string
           surveyed_apartments?: number | null
           total_apartments?: number | null
@@ -93,10 +96,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "buildings_city_id_fkey"
-            columns: ["city_id"]
+            foreignKeyName: "buildings_district_id_fkey"
+            columns: ["district_id"]
             isOneToOne: false
-            referencedRelation: "cities"
+            referencedRelation: "districts"
             referencedColumns: ["id"]
           },
         ]

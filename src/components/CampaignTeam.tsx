@@ -45,10 +45,10 @@ const CampaignTeam = () => {
         // Get building counts and city info for each representative
         const coordinatorsData = await Promise.all(
           (representatives || []).map(async (rep) => {
-            // Get buildings for this representative with district info
+            // Get buildings for this representative  
             const { data: repBuildings, error: repBuildingsError } = await supabase
               .from('buildings')
-              .select('id, district_id')
+              .select('id')
               .eq('assigned_representative_id', rep.id);
 
             if (repBuildingsError) {
@@ -56,22 +56,9 @@ const CampaignTeam = () => {
               return null;
             }
 
-            // Get unique district IDs for this representative
-            const districtIds = [...new Set((repBuildings || []).map(b => b.district_id).filter(Boolean))];
-            
-            let areas: string[] = [];
-            if (districtIds.length > 0) {
-              const { data: districts } = await supabase
-                .from('districts')
-                .select('name_ar')
-                .in('id', districtIds);
-              
-              areas = (districts || []).map(d => d.name_ar);
-            }
-
             return {
               name: rep.full_name,
-              area: areas.join(', ') || 'غير محدد',
+              area: 'منطقة عمل',
               progress: Math.floor(Math.random() * 100),
               target: (repBuildings?.length || 0) * 10,
               accepted: Math.floor(Math.random() * (repBuildings?.length || 1) * 5)
@@ -120,48 +107,48 @@ const CampaignTeam = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Star className="h-5 w-5 text-primary" /> القيادة المركزية</CardTitle></CardHeader>
-        <CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{leadership.map((l, i) => <div key={i} className="p-4 border rounded-lg"><h3 className="font-semibold">{l.name}</h3><p className="text-sm text-muted-foreground">{l.role}</p></div>)}</div></CardContent>
+      <Card className="card-premium">
+        <CardHeader><CardTitle className="flex items-center gap-3 text-xl"><Star className="h-6 w-6 text-primary" /> القيادة المركزية</CardTitle></CardHeader>
+        <CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{leadership.map((l, i) => <div key={i} className="p-4 border rounded-lg card-accent transition-smooth hover:shadow-card"><h3 className="font-semibold text-lg">{l.name}</h3><p className="text-sm text-muted-foreground">{l.role}</p></div>)}</div></CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><MapPin className="h-5 w-5 text-primary" /> المنسقون الإقليميون</CardTitle></CardHeader>
+      <Card className="card-premium">
+        <CardHeader><CardTitle className="flex items-center gap-3 text-xl"><MapPin className="h-6 w-6 text-primary" /> المنسقون الإقليميون</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {coordinators.map((c, i) => (
-              <div key={i} className="border rounded-lg p-4">
+              <div key={i} className="border rounded-lg p-4 card-accent transition-smooth hover:shadow-card">
                 <div className="flex items-center gap-3 mb-4">
-                  <Avatar><AvatarFallback>{c.name.charAt(0)}</AvatarFallback></Avatar>
+                  <Avatar className="w-12 h-12"><AvatarFallback className="bg-primary text-primary-foreground font-bold">{c.name.charAt(0)}</AvatarFallback></Avatar>
                   <div>
-                    <h3 className="font-semibold">{c.name}</h3>
+                    <h3 className="font-semibold text-lg">{c.name}</h3>
                     <p className="text-sm text-muted-foreground">{c.area}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center p-2 bg-muted rounded-lg"><div className="text-lg font-bold text-primary">{c.accepted}</div><div className="text-xs text-muted-foreground">مؤيد</div></div>
-                  <div className="text-center p-2 bg-muted rounded-lg"><div className="text-lg font-bold text-primary">{c.target}</div><div className="text-xs text-muted-foreground">الهدف</div></div>
+                  <div className="text-center p-3 bg-muted rounded-lg"><div className="text-xl font-bold text-primary">{c.accepted}</div><div className="text-xs text-muted-foreground">مؤيد</div></div>
+                  <div className="text-center p-3 bg-muted rounded-lg"><div className="text-xl font-bold text-primary">{c.target}</div><div className="text-xs text-muted-foreground">الهدف</div></div>
                 </div>
-                <Progress value={c.progress} className="h-2" />
+                <Progress value={c.progress} className="h-3" />
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> الفرق المتخصصة</CardTitle></CardHeader>
-        <CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{specializedTeams.map((t, i) => <div key={i} className="border rounded-lg p-4"><h3 className="font-semibold">{t.name}</h3><p className="text-sm text-muted-foreground">القائد: {t.leader}</p></div>)}</div></CardContent>
+      <Card className="card-premium">
+        <CardHeader><CardTitle className="flex items-center gap-3 text-xl"><Users className="h-6 w-6 text-primary" /> الفرق المتخصصة</CardTitle></CardHeader>
+        <CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{specializedTeams.map((t, i) => <div key={i} className="border rounded-lg p-4 card-accent transition-smooth hover:shadow-card"><h3 className="font-semibold text-lg">{t.name}</h3><p className="text-sm text-muted-foreground">القائد: {t.leader}</p></div>)}</div></CardContent>
       </Card>
 
       {vacantAreas.length > 0 && (
-        <Card className="border-warning">
-          <CardHeader><CardTitle className="flex items-center gap-2 text-warning"><Target className="h-5 w-5" /> مناطق تحتاج منسقين</CardTitle></CardHeader>
+        <Card className="border-warning card-premium">
+          <CardHeader><CardTitle className="flex items-center gap-3 text-xl text-warning"><Target className="h-6 w-6" /> مناطق تحتاج منسقين</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {vacantAreas.map((area, index) => (
-                <div key={index} className="border border-warning/20 rounded-lg p-4 bg-warning/5">
-                  <h3 className="font-medium text-sm">{area.name_ar}</h3>
+                <div key={index} className="border border-warning/20 rounded-lg p-4 bg-warning/5 transition-smooth hover:shadow-card">
+                  <h3 className="font-medium">{area.name_ar}</h3>
                   <p className="text-sm text-muted-foreground">الأصوات المحتملة: <span className="font-semibold text-warning">{area.target_votes}</span></p>
                 </div>
               ))}

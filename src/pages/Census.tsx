@@ -218,14 +218,14 @@ const Census = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="border-primary/20">
+      <Card className="card-premium border-primary/20">
         <CardHeader className="flex flex-row items-center justify-between">
-            <div className="space-y-1">
-                <CardTitle className="flex items-center gap-2 text-2xl text-primary">
-                    <Users className="w-6 h-6" />
+            <div className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-2xl text-primary">
+                    <Users className="w-7 h-7" />
                     إحصاء و تسجيل الناخبين
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-base">
                     تسجيل بيانات الناخبين بشكل فردي حسب العمارات والمربعات السكنية
                 </CardDescription>
             </div>
@@ -236,24 +236,24 @@ const Census = () => {
       <div className="grid md:grid-cols-3 gap-6">
         {/* Selection Panel */}
         <div className="md:col-span-1 space-y-4">
-          <Card>
+          <Card className="card-accent">
             <CardHeader>
-              <CardTitle className="text-lg">1. اختيار المنطقة</CardTitle>
+              <CardTitle className="text-xl">1. اختيار المنطقة</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>الحي</Label>
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">الحي</Label>
                 <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                  <SelectTrigger><SelectValue placeholder="اختر الحي" /></SelectTrigger>
+                  <SelectTrigger className="shadow-card"><SelectValue placeholder="اختر الحي" /></SelectTrigger>
                   <SelectContent>{districts.map(d => <SelectItem key={d.id} value={d.id}>{d.name_ar}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
 
               {selectedDistrict && (
-                <div className="space-y-2">
-                  <Label>المربع السكني</Label>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">المربع السكني</Label>
                    <Select value={selectedSquare} onValueChange={setSelectedSquare}>
-                     <SelectTrigger><SelectValue placeholder="اختر المربع" /></SelectTrigger>
+                     <SelectTrigger className="shadow-card"><SelectValue placeholder="اختر المربع" /></SelectTrigger>
                      <SelectContent>
                        {squares.length > 0 ? squares.map(s => (
                          <SelectItem key={s.id} value={s.id}>المربع {s.square_number}</SelectItem>
@@ -266,10 +266,10 @@ const Census = () => {
               )}
 
               {selectedSquare && (
-                <div className="space-y-2">
-                  <Label>العمارة</Label>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">العمارة</Label>
                   <Select value={selectedBuilding} onValueChange={setSelectedBuilding}>
-                    <SelectTrigger><SelectValue placeholder="اختر العمارة" /></SelectTrigger>
+                    <SelectTrigger className="shadow-card"><SelectValue placeholder="اختر العمارة" /></SelectTrigger>
                     <SelectContent>{availableBuildings.map(b => <SelectItem key={b} value={b}>عمارة {b}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
@@ -280,56 +280,88 @@ const Census = () => {
 
         {/* Census Form */}
         <div className="md:col-span-2">
-          <Card>
+          <Card className="card-premium">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
+              <CardTitle className="text-xl flex items-center gap-3">
+                <UserPlus className="w-6 h-6 text-primary" />
                 2. بيانات الناخب
               </CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="apartment_number">رقم الشقة</Label>
-                    <Input id="apartment_number" value={formData.apartment_number} onChange={e => setFormData(p => ({ ...p, apartment_number: e.target.value }))} placeholder="رقم الشقة" required />
+                  <div className="space-y-3">
+                    <Label htmlFor="apartment_number" className="text-sm font-medium">رقم الشقة</Label>
+                    <Input 
+                      id="apartment_number" 
+                      value={formData.apartment_number} 
+                      onChange={e => setFormData(p => ({ ...p, apartment_number: e.target.value }))} 
+                      placeholder="رقم الشقة" 
+                      required 
+                      className="shadow-card"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="head_of_household">الاسم الكامل</Label>
-                    <Input id="head_of_household" value={formData.head_of_household} onChange={e => setFormData(p => ({ ...p, head_of_household: e.target.value }))} placeholder="اسم الناخب الكامل" required />
+                  <div className="space-y-3">
+                    <Label htmlFor="head_of_household" className="text-sm font-medium">الاسم الكامل</Label>
+                    <Input 
+                      id="head_of_household" 
+                      value={formData.head_of_household} 
+                      onChange={e => setFormData(p => ({ ...p, head_of_household: e.target.value }))} 
+                      placeholder="اسم الناخب الكامل" 
+                      required 
+                      className="shadow-card"
+                    />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone_number">رقم الهاتف (اختياري)</Label>
-                  <Input id="phone_number" value={formData.phone_number} onChange={e => setFormData(p => ({ ...p, phone_number: e.target.value }))} placeholder="رقم هاتف الناخب" type="tel" />
                 </div>
 
                 <div className="space-y-3">
-                    <Label>هل يحوز على بطاقة انتخاب؟</Label>
+                  <Label htmlFor="phone_number" className="text-sm font-medium">رقم الهاتف (اختياري)</Label>
+                  <Input 
+                    id="phone_number" 
+                    value={formData.phone_number} 
+                    onChange={e => setFormData(p => ({ ...p, phone_number: e.target.value }))} 
+                    placeholder="رقم هاتف الناخب" 
+                    type="tel" 
+                    className="shadow-card"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                    <Label className="text-sm font-medium">هل يحوز على بطاقة انتخاب؟</Label>
                     <RadioGroup
                         required
                         value={formData.has_voting_card || ''}
                         onValueChange={(value: 'yes' | 'no') => setFormData(p => ({ ...p, has_voting_card: value }))}
-                        className="flex gap-4"
+                        className="flex gap-6"
                     >
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-smooth">
                             <RadioGroupItem value="yes" id="has-card-yes" />
-                            <Label htmlFor="has-card-yes">نعم</Label>
+                            <Label htmlFor="has-card-yes" className="cursor-pointer">نعم</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-smooth">
                             <RadioGroupItem value="no" id="has-card-no" />
-                            <Label htmlFor="has-card-no">لا</Label>
+                            <Label htmlFor="has-card-no" className="cursor-pointer">لا</Label>
                         </div>
                     </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes">ملاحظات</Label>
-                  <Textarea id="notes" value={formData.notes} onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} placeholder="أي ملاحظات إضافية..." rows={3} />
+                <div className="space-y-3">
+                  <Label htmlFor="notes" className="text-sm font-medium">ملاحظات</Label>
+                  <Textarea 
+                    id="notes" 
+                    value={formData.notes} 
+                    onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))} 
+                    placeholder="أي ملاحظات إضافية..." 
+                    rows={3} 
+                    className="shadow-card"
+                  />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={submitting || !selectedSquare || !selectedBuilding}>
+                <Button 
+                  type="submit" 
+                  className="w-full btn-primary" 
+                  disabled={submitting || !selectedSquare || !selectedBuilding}
+                >
                   {submitting ? "جاري الحفظ..." : "حفظ بيانات الناخب"}
                 </Button>
               </form>

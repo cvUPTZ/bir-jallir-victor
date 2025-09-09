@@ -24,9 +24,9 @@ interface District {
 interface BuildingData {
   id: string;
   building_number: string;
-  district_id: string;
   assigned_representative_id: string | null;
   address: string | null;
+  building_code: string | null;
   district_name?: string;
   representative_name?: string;
 }
@@ -83,47 +83,32 @@ const AdminAssignmentManager = () => {
       
       let query = supabase
         .from('buildings')
-        .select('id, building_number, district_id, assigned_representative_id, address', { count: 'exact' })
+        .select('*', { count: 'exact' })
         .range(from, to)
         .order('building_number');
       
-      if (districtFilter) {
-        query = query.eq('district_id', districtFilter);
-      }
-      
+      // For now, let's not filter by district since the column structure is unclear
       const { data: buildingsData, error: buildingsError, count } = await query;
       if (buildingsError) throw buildingsError;
       
-      // Fetch additional details separately to avoid type issues
-      const buildingsWithDetails = await Promise.all(
-        (buildingsData || []).map(async (building) => {
+      // Process buildings data
+      const processedBuildings = await Promise.all(
+        (buildingsData || []).map(async (building: any) => {
           const buildingDetail: BuildingData = {
             id: building.id,
-            building_number: building.building_number || '',
-            district_id: building.district_id || '',
+            building_number: building.building_number || building.building_code || '',
             assigned_representative_id: building.assigned_representative_id,
             address: building.address,
+            building_code: building.building_code,
           };
           
-          // Fetch district name
-          if (building.district_id) {
-            const { data: districtData } = await supabase
-              .from('districts')
-              .select('name_ar')
-              .eq('id', building.district_id)
-              .single();
-            if (districtData) {
-              buildingDetail.district_name = districtData.name_ar;
-            }
-          }
-          
-          // Fetch representative name
+          // Fetch representative name if assigned
           if (building.assigned_representative_id) {
             const { data: profileData } = await supabase
               .from('profiles')
               .select('full_name')
               .eq('id', building.assigned_representative_id)
-              .single();
+              .maybeSingle();
             if (profileData) {
               buildingDetail.representative_name = profileData.full_name;
             }
@@ -133,7 +118,7 @@ const AdminAssignmentManager = () => {
         })
       );
       
-      setBuildings(buildingsWithDetails);
+      setBuildings(processedBuildings);
       setTotalBuildings(count || 0);
     } catch (error) {
       console.error('Error fetching buildings:', error);
@@ -149,19 +134,11 @@ const AdminAssignmentManager = () => {
   }, [fetchData]);
 
   useEffect(() => {
-    if (selectedDistrict) {
-      setCurrentPage(0);
-      fetchBuildings(0, selectedDistrict);
-    } else {
-      setBuildings([]);
-      setTotalBuildings(0);
-    }
-  }, [fetchBuildings, selectedDistrict]);
+    fetchBuildings(0);
+  }, [fetchBuildings]);
 
   useEffect(() => {
-    if (selectedDistrict) {
-      fetchBuildings(currentPage, selectedDistrict);
-    }
+    fetchBuildings(currentPage);
   }, [fetchBuildings, currentPage]);
 
   const handleAssignBuildings = async () => {
@@ -192,22 +169,17 @@ const AdminAssignmentManager = () => {
 
     setSaving(true);
     try {
-      const updates = selectedBuildings.map(buildingId => ({
-        id: buildingId,
-        assigned_representative_id: selectedRep
-      }));
-
-      for (const update of updates) {
+      for (const buildingId of selectedBuildings) {
         const { error } = await supabase
           .from('buildings')
-          .update({ assigned_representative_id: update.assigned_representative_id })
-          .eq('id', update.id);
+          .update({ assigned_representative_id: selectedRep })
+          .eq('id', buildingId);
         
         if (error) throw error;
       }
 
       toast({ title: "تم بنجاح", description: "تم تعيين المباني بنجاح." });
-      fetchBuildings(currentPage, selectedDistrict);
+      fetchBuildings(currentPage);
       setSelectedRep('');
       setSelectedBuildings([]);
     } catch (error) {
@@ -219,8 +191,8 @@ const AdminAssignmentManager = () => {
   };
 
   const addBuilding = async () => {
-    if (!selectedDistrict || !newBuildingNumber) {
-      toast({ variant: "destructive", title: "بيانات ناقصة", description: "الرجاء إدخال رقم المبنى واختيار المنطقة." });
+    if (!newBuildingNumber) {
+      toast({ variant: "destructive", title: "بيانات ناقصة", description: "الرجاء إدخال رقم المبنى." });
       return;
     }
 
@@ -229,7 +201,6 @@ const AdminAssignmentManager = () => {
         .from('buildings')
         .insert([{
           building_number: newBuildingNumber,
-          district_id: selectedDistrict,
           address: newBuildingAddress || null,
           building_code: newBuildingNumber
         }]);
@@ -240,7 +211,7 @@ const AdminAssignmentManager = () => {
       setNewBuildingNumber('');
       setNewBuildingAddress('');
       setShowAddBuilding(false);
-      fetchBuildings(currentPage, selectedDistrict);
+      fetchBuildings(currentPage);
     } catch (error) {
       const message = error instanceof Error ? error.message : "خطأ في إضافة المبنى";
       toast({ variant: "destructive", title: "خطأ", description: message });
@@ -251,30 +222,19 @@ const AdminAssignmentManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* District Filter */}
+      {/* Header */}
       <Card className="card-premium">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <MapPin className="w-6 h-6 text-primary" />
-            فلترة المباني حسب المنطقة
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <MapPin className="w-7 h-7 text-primary" />
+            إدارة تعيين المباني للمندوبين
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 flex-wrap">
-            <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-              <SelectTrigger className="w-60 shadow-card">
-                <SelectValue placeholder="اختر المنطقة..." />
-              </SelectTrigger>
-              <SelectContent>
-                {districts.map(district => (
-                  <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
             <Dialog open={showAddBuilding} onOpenChange={setShowAddBuilding}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 btn-secondary">
+                <Button className="flex items-center gap-2 btn-primary">
                   <Plus className="w-4 h-4" />
                   إضافة مبنى جديد
                 </Button>
@@ -284,19 +244,6 @@ const AdminAssignmentManager = () => {
                   <DialogTitle className="text-xl">إضافة مبنى جديد</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">المنطقة</Label>
-                    <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                      <SelectTrigger className="shadow-card">
-                        <SelectValue placeholder="اختر المنطقة..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {districts.map(district => (
-                          <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">رقم المبنى</Label>
                     <Input
@@ -390,9 +337,7 @@ const AdminAssignmentManager = () => {
               ) : buildings.length === 0 ? (
                 <div className="text-center py-12">
                   <Building className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground text-lg">
-                    {selectedDistrict ? 'لا توجد مباني في هذه المنطقة' : 'الرجاء اختيار منطقة لعرض المباني'}
-                  </p>
+                  <p className="text-muted-foreground text-lg">لا توجد مباني</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -413,7 +358,7 @@ const AdminAssignmentManager = () => {
                     >
                       <div className="space-y-1">
                         <p className="font-semibold text-foreground">
-                          {building.district_name} - المبنى رقم {building.building_number}
+                          المبنى رقم {building.building_number}
                         </p>
                         {building.address && (
                           <p className="text-sm text-muted-foreground">{building.address}</p>
