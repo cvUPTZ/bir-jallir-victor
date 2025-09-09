@@ -271,7 +271,7 @@ const AdminAssignmentManager = () => {
                         <SelectValue placeholder="اختر المنطقة..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {districts.map(district => (
+                        {districts.filter(district => district.id && district.id.trim() !== '').map(district => (
                           <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
                         ))}
                       </SelectContent>
