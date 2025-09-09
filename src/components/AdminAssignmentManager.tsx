@@ -358,7 +358,7 @@ const AdminAssignmentManager = () => {
                   >
                     <div>
                       <p className="font-semibold">
-                        {building.city?.name_ar} - المبنى رقم {building.building_number}
+                        {building.district?.name_ar} - المبنى رقم {building.building_number}
                       </p>
                       {building.address && (
                         <p className="text-xs text-muted-foreground">{building.address}</p>
