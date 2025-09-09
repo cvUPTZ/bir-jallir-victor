@@ -32,7 +32,7 @@ interface Building {
   district_id: string;
   assigned_representative_id: string | null;
   address: string | null;
-  cities?: { name_ar: string }; // Changed from district to cities
+  district?: { name_ar: string }; // Changed from district to cities
   profiles?: { full_name: string };
 }
 
@@ -73,7 +73,7 @@ const AdminAssignmentManager = () => {
 
       // Fetch districts/cities - Updated to use cities table
       const { data: districtsData, error: districtsError } = await supabase
-        .from('cities') // Changed from 'districts' to 'cities'
+        .from('districts') // Changed from 'districts' to 'cities'
         .select('*')
         .order('name_ar');
       if (districtsError) throw districtsError;
@@ -113,7 +113,7 @@ const AdminAssignmentManager = () => {
 
       const formattedBuildings = data?.map((building: any) => ({
         ...building,
-        cities: building.cities, // Keep cities reference
+        districts: building.districts, // Keep cities reference
         profiles: building.profiles
       })) || [];
 
