@@ -16,18 +16,23 @@ interface Profile {
   full_name: string;
 }
 
-interface City {
+interface District {
   id: string;
   name_ar: string;
+  name_fr?: string;
+  coordinator_name?: string;
+  target_votes?: number;
+  priority_level?: string;
+  status?: string;
 }
 
 interface Building {
   id: string;
   building_number: string;
-  city_id: string;
+  district_id: string;
   assigned_representative_id: string | null;
   address: string | null;
-  city?: { name_ar: string };
+  district?: { name_ar: string };
   representative?: { full_name: string };
 }
 
@@ -40,11 +45,11 @@ interface ResidentialSquare {
 
 const AdminAssignmentManager = () => {
   const [representatives, setRepresentatives] = useState<Profile[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [squares, setSquares] = useState<ResidentialSquare[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>('');
-  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,13 +71,13 @@ const AdminAssignmentManager = () => {
       if (repsError) throw repsError;
       setRepresentatives(repsData || []);
 
-      // Fetch cities
-      const { data: citiesData, error: citiesError } = await supabase
-        .from('cities')
+      // Fetch districts
+      const { data: districtsData, error: districtsError } = await supabase
+        .from('districts')
         .select('*')
         .order('name_ar');
-      if (citiesError) throw citiesError;
-      setCities(citiesData || []);
+      if (districtsError) throw districtsError;
+      setDistricts(districtsData || []);
 
     } catch (error) {
       const message = error instanceof Error ? error.message : "خطأ في تحميل البيانات";
@@ -82,7 +87,7 @@ const AdminAssignmentManager = () => {
     }
   }, [toast]);
 
-  const fetchBuildings = useCallback(async (page: number, cityFilter?: string) => {
+  const fetchBuildings = useCallback(async (page: number, districtFilter?: string) => {
     setLoading(true);
     try {
       const from = page * PAGE_SIZE;
@@ -92,14 +97,14 @@ const AdminAssignmentManager = () => {
         .from('buildings')
         .select(`
           *,
-          cities!inner(name_ar),
+          districts!inner(name_ar),
           profiles(full_name)
         `, { count: 'exact' })
         .order('building_number')
         .range(from, to);
 
-      if (cityFilter) {
-        query = query.eq('city_id', cityFilter);
+      if (districtFilter) {
+        query = query.eq('district_id', districtFilter);
       }
 
       const { data, error, count } = await query;
@@ -107,7 +112,7 @@ const AdminAssignmentManager = () => {
 
       const formattedBuildings = data.map((building: any) => ({
         ...building,
-        city: building.cities,
+        district: building.districts,
         representative: building.profiles
       }));
 
@@ -127,8 +132,8 @@ const AdminAssignmentManager = () => {
   }, [fetchData]);
 
   useEffect(() => {
-    fetchBuildings(currentPage, selectedCity);
-  }, [fetchBuildings, currentPage, selectedCity]);
+    fetchBuildings(currentPage, selectedDistrict);
+  }, [fetchBuildings, currentPage, selectedDistrict]);
 
   const handleAssignBuildings = async () => {
     if (!selectedRep || selectedBuildings.length === 0) {
@@ -166,7 +171,7 @@ const AdminAssignmentManager = () => {
       if (error) throw error;
 
       toast({ title: "تم بنجاح", description: "تم تعيين المباني بنجاح." });
-      fetchBuildings(currentPage, selectedCity);
+      fetchBuildings(currentPage, selectedDistrict);
       setSelectedRep('');
       setSelectedBuildings([]);
     } catch (error) {
@@ -178,8 +183,8 @@ const AdminAssignmentManager = () => {
   };
 
   const addBuilding = async () => {
-    if (!selectedCity || !newBuildingNumber) {
-      toast({ variant: "destructive", title: "بيانات ناقصة", description: "الرجاء إدخال رقم المبنى واختيار المدينة." });
+    if (!selectedDistrict || !newBuildingNumber) {
+      toast({ variant: "destructive", title: "بيانات ناقصة", description: "الرجاء إدخال رقم المبنى واختيار المنطقة." });
       return;
     }
 
@@ -188,7 +193,7 @@ const AdminAssignmentManager = () => {
         .from('buildings')
         .insert({
           building_number: newBuildingNumber,
-          city_id: selectedCity,
+          district_id: selectedDistrict,
           address: newBuildingAddress || null
         });
 
@@ -198,7 +203,7 @@ const AdminAssignmentManager = () => {
       setNewBuildingNumber('');
       setNewBuildingAddress('');
       setShowAddBuilding(false);
-      fetchBuildings(currentPage, selectedCity);
+      fetchBuildings(currentPage, selectedDistrict);
     } catch (error) {
       const message = error instanceof Error ? error.message : "خطأ في إضافة المبنى";
       toast({ variant: "destructive", title: "خطأ", description: message });
@@ -209,23 +214,23 @@ const AdminAssignmentManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* City Filter */}
+      {/* District Filter */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="w-5 h-5" />
-            فلترة المباني حسب المدينة
+            فلترة المباني حسب المنطقة
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Select value={selectedCity} onValueChange={setSelectedCity}>
+            <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
               <SelectTrigger className="w-60">
-                <SelectValue placeholder="اختر المدينة..." />
+                <SelectValue placeholder="اختر المنطقة..." />
               </SelectTrigger>
               <SelectContent>
-                {cities.map(city => (
-                  <SelectItem key={city.id} value={city.id}>{city.name_ar}</SelectItem>
+                {districts.map(district => (
+                  <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -243,14 +248,14 @@ const AdminAssignmentManager = () => {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>المدينة</Label>
-                    <Select value={selectedCity} onValueChange={setSelectedCity}>
+                    <Label>المنطقة</Label>
+                    <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
                       <SelectTrigger>
-                        <SelectValue placeholder="اختر المدينة..." />
+                        <SelectValue placeholder="اختر المنطقة..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {cities.map(city => (
-                          <SelectItem key={city.id} value={city.id}>{city.name_ar}</SelectItem>
+                        {districts.map(district => (
+                          <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -339,7 +344,7 @@ const AdminAssignmentManager = () => {
               {loading ? (
                 <p>جاري تحميل المباني...</p>
               ) : buildings.length === 0 ? (
-                <p className="text-muted-foreground">لا توجد مباني في هذه المدينة</p>
+                <p className="text-muted-foreground">لا توجد مباني في هذه المنطقة</p>
               ) : (
                 buildings.map(building => (
                   <div
