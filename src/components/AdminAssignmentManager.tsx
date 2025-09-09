@@ -224,11 +224,11 @@ const AdminAssignmentManager = () => {
                 <SelectValue placeholder="اختر المدينة..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع المدن</SelectItem>
-                {cities.map(city => (
-                  <SelectItem key={city.id} value={city.id}>{city.name_ar}</SelectItem>
-                ))}
-              </SelectContent>
+  {/* The placeholder will now act as the "All Cities" option when no city is selected */}
+  {cities.map(city => (
+    <SelectItem key={city.id} value={city.id}>{city.name_ar}</SelectItem>
+  ))}
+</SelectContent>
             </Select>
             
             <Dialog open={showAddBuilding} onOpenChange={setShowAddBuilding}>
