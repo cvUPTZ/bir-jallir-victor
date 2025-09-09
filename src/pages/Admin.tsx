@@ -4,17 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Shield, Users, DollarSign, MapPin, Target, Building, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, Users, DollarSign, MapPin, Target, Building, UserCog } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdminTeamManager from '@/components/AdminTeamManager';
 import AdminBudgetManager from '@/components/AdminBudgetManager';
 import AdminDistrictsManager from '@/components/AdminDistrictsManager';
 import AdminStrategyManager from '@/components/AdminStrategyManager';
 import AdminAssignmentManager from '@/components/AdminAssignmentManager';
+import AdminUserManagement from '@/components/AdminUserManagement';
 
 const Admin = () => {
-  const { toast } = useToast();
-
   return (
     <div className="space-y-6" dir="rtl">
       <Card className="border-primary/20">
@@ -28,7 +27,11 @@ const Admin = () => {
       </Card>
 
       <Tabs defaultValue="assignments" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <UserCog className="w-4 h-4" />
+            المستخدمين
+          </TabsTrigger>
           <TabsTrigger value="assignments" className="flex items-center gap-2">
             <Building className="w-4 h-4" />
             التعيينات
@@ -50,6 +53,10 @@ const Admin = () => {
             الاستراتيجية
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="users">
+          <AdminUserManagement />
+        </TabsContent>
 
         <TabsContent value="assignments">
           <AdminAssignmentManager />
