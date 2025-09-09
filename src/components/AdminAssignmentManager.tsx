@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { User, MapPin, Building, Home, CheckCircle, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { User, MapPin, Building, CheckCircle, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -19,35 +19,22 @@ interface Profile {
 interface District {
   id: string;
   name_ar: string;
-  name_fr?: string;
-  coordinator_name?: string;
-  target_votes?: number;
-  priority_level?: string;
-  status?: string;
 }
 
-interface Building {
+interface BuildingData {
   id: string;
   building_number: string;
   district_id: string;
   assigned_representative_id: string | null;
   address: string | null;
-  districts?: { name_ar: string }; // This matches the query structure
-  profiles?: { full_name: string };
-}
-
-interface ResidentialSquare {
-  id: string;
-  square_number: number;
-  building_id: string | null;
-  assigned_representative_id: string | null;
+  district_name?: string;
+  representative_name?: string;
 }
 
 const AdminAssignmentManager = () => {
   const [representatives, setRepresentatives] = useState<Profile[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [squares, setSquares] = useState<ResidentialSquare[]>([]);
+  const [buildings, setBuildings] = useState<BuildingData[]>([]);
   const [selectedRep, setSelectedRep] = useState<string>('');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([]);
@@ -74,7 +61,7 @@ const AdminAssignmentManager = () => {
       // Fetch districts
       const { data: districtsData, error: districtsError } = await supabase
         .from('districts')
-        .select('*')
+        .select('id, name_ar')
         .order('name_ar');
       if (districtsError) throw districtsError;
       setDistricts(districtsData || []);
@@ -96,11 +83,7 @@ const AdminAssignmentManager = () => {
       
       let query = supabase
         .from('buildings')
-        .select(`
-          *,
-          districts!inner(name_ar),
-          profiles(full_name)
-        `, { count: 'exact' })
+        .select('id, building_number, district_id, assigned_representative_id, address', { count: 'exact' })
         .range(from, to)
         .order('building_number');
       
@@ -108,18 +91,49 @@ const AdminAssignmentManager = () => {
         query = query.eq('district_id', districtFilter);
       }
       
-      const { data, error, count } = await query;
-      if (error) throw error;
+      const { data: buildingsData, error: buildingsError, count } = await query;
+      if (buildingsError) throw buildingsError;
       
-      console.log('Fetched buildings data:', data); // Debug log
+      // Fetch additional details separately to avoid type issues
+      const buildingsWithDetails = await Promise.all(
+        (buildingsData || []).map(async (building) => {
+          const buildingDetail: BuildingData = {
+            id: building.id,
+            building_number: building.building_number || '',
+            district_id: building.district_id || '',
+            assigned_representative_id: building.assigned_representative_id,
+            address: building.address,
+          };
+          
+          // Fetch district name
+          if (building.district_id) {
+            const { data: districtData } = await supabase
+              .from('districts')
+              .select('name_ar')
+              .eq('id', building.district_id)
+              .single();
+            if (districtData) {
+              buildingDetail.district_name = districtData.name_ar;
+            }
+          }
+          
+          // Fetch representative name
+          if (building.assigned_representative_id) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', building.assigned_representative_id)
+              .single();
+            if (profileData) {
+              buildingDetail.representative_name = profileData.full_name;
+            }
+          }
+          
+          return buildingDetail;
+        })
+      );
       
-      const formattedBuildings = data?.map((building: any) => ({
-        ...building,
-        districts: building.districts, // Keep the districts reference as is
-        profiles: building.profiles
-      })) || [];
-      
-      setBuildings(formattedBuildings);
+      setBuildings(buildingsWithDetails);
       setTotalBuildings(count || 0);
     } catch (error) {
       console.error('Error fetching buildings:', error);
@@ -136,10 +150,9 @@ const AdminAssignmentManager = () => {
 
   useEffect(() => {
     if (selectedDistrict) {
-      setCurrentPage(0); // Reset to first page when district changes
+      setCurrentPage(0);
       fetchBuildings(0, selectedDistrict);
     } else {
-      // Clear buildings when no district is selected
       setBuildings([]);
       setTotalBuildings(0);
     }
@@ -179,12 +192,19 @@ const AdminAssignmentManager = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('buildings')
-        .update({ assigned_representative_id: selectedRep })
-        .in('id', selectedBuildings);
+      const updates = selectedBuildings.map(buildingId => ({
+        id: buildingId,
+        assigned_representative_id: selectedRep
+      }));
 
-      if (error) throw error;
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('buildings')
+          .update({ assigned_representative_id: update.assigned_representative_id })
+          .eq('id', update.id);
+        
+        if (error) throw error;
+      }
 
       toast({ title: "تم بنجاح", description: "تم تعيين المباني بنجاح." });
       fetchBuildings(currentPage, selectedDistrict);
@@ -207,11 +227,12 @@ const AdminAssignmentManager = () => {
     try {
       const { error } = await supabase
         .from('buildings')
-        .insert({
+        .insert([{
           building_number: newBuildingNumber,
           district_id: selectedDistrict,
-          address: newBuildingAddress || null
-        });
+          address: newBuildingAddress || null,
+          building_code: newBuildingNumber
+        }]);
 
       if (error) throw error;
 
@@ -231,71 +252,71 @@ const AdminAssignmentManager = () => {
   return (
     <div className="space-y-6">
       {/* District Filter */}
-      <Card>
+      <Card className="card-premium">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <MapPin className="w-6 h-6 text-primary" />
             فلترة المباني حسب المنطقة
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-              <SelectTrigger className="w-60">
+              <SelectTrigger className="w-60 shadow-card">
                 <SelectValue placeholder="اختر المنطقة..." />
               </SelectTrigger>
               <SelectContent>
-  {/* The placeholder will now be shown when no district is selected. */}
-  {/* Ensure your state (selectedDistrict) is initialized to '' */}
-  {districts.map(district => (
-    <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
-  ))}
-</SelectContent>
+                {districts.map(district => (
+                  <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
             
             <Dialog open={showAddBuilding} onOpenChange={setShowAddBuilding}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button variant="outline" className="flex items-center gap-2 btn-secondary">
                   <Plus className="w-4 h-4" />
                   إضافة مبنى جديد
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="card-premium">
                 <DialogHeader>
-                  <DialogTitle>إضافة مبنى جديد</DialogTitle>
+                  <DialogTitle className="text-xl">إضافة مبنى جديد</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>المنطقة</Label>
+                    <Label className="text-sm font-medium">المنطقة</Label>
                     <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                      <SelectTrigger>
+                      <SelectTrigger className="shadow-card">
                         <SelectValue placeholder="اختر المنطقة..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {districts.filter(district => district.id && district.id.trim() !== '').map(district => (
+                        {districts.map(district => (
                           <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>رقم المبنى</Label>
+                    <Label className="text-sm font-medium">رقم المبنى</Label>
                     <Input
                       type="text"
                       value={newBuildingNumber}
                       onChange={(e) => setNewBuildingNumber(e.target.value)}
                       placeholder="أدخل رقم المبنى"
+                      className="shadow-card"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>العنوان (اختياري)</Label>
+                    <Label className="text-sm font-medium">العنوان (اختياري)</Label>
                     <Input
                       value={newBuildingAddress}
                       onChange={(e) => setNewBuildingAddress(e.target.value)}
                       placeholder="أدخل عنوان المبنى"
+                      className="shadow-card"
                     />
                   </div>
-                  <Button onClick={addBuilding} className="w-full">
+                  <Button onClick={addBuilding} className="w-full btn-primary">
                     إضافة المبنى
                   </Button>
                 </div>
@@ -307,18 +328,18 @@ const AdminAssignmentManager = () => {
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Assignment Section */}
-        <Card>
+        <Card className="card-accent">
           <CardHeader>
-            <CardTitle>تعيين المباني للمندوبين</CardTitle>
+            <CardTitle className="text-xl">تعيين المباني للمندوبين</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <User className="w-4 h-4" /> 
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <User className="w-4 h-4 text-primary" /> 
                 اختر المندوب
               </Label>
               <Select value={selectedRep} onValueChange={setSelectedRep}>
-                <SelectTrigger>
+                <SelectTrigger className="shadow-card">
                   <SelectValue placeholder="اختر مندوب..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -328,23 +349,23 @@ const AdminAssignmentManager = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Building className="w-4 h-4" /> 
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Building className="w-4 h-4 text-primary" /> 
                 اختر المباني
               </Label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
                 اختر مبنى أو أكثر من القائمة على اليمين (الحد الأقصى 6 مباني لكل مندوب).
               </p>
               {selectedBuildings.length > 0 && (
-                <p className="text-sm text-primary">
+                <div className="status-success">
                   تم اختيار {selectedBuildings.length} مبنى
-                </p>
+                </div>
               )}
             </div>
             <Button 
               onClick={handleAssignBuildings} 
-              className="w-full" 
+              className="w-full btn-primary" 
               disabled={saving || !selectedRep || selectedBuildings.length === 0}
             >
               {saving ? "جاري التعيين..." : "تعيين المباني المحددة"}
@@ -353,81 +374,93 @@ const AdminAssignmentManager = () => {
         </Card>
 
         {/* Buildings List */}
-        <Card>
+        <Card className="card-premium">
           <CardHeader>
-            <CardTitle>قائمة المباني</CardTitle>
+            <CardTitle className="text-xl">قائمة المباني</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-4">
             <div className="min-h-[400px]">
               {loading ? (
-                <p>جاري تحميل المباني...</p>
+                <div className="flex items-center justify-center py-12">
+                  <div className="pulse-glow p-4 rounded-lg">
+                    <Building className="w-8 h-8 text-primary animate-pulse" />
+                    <p className="mt-2 text-sm text-muted-foreground">جاري تحميل المباني...</p>
+                  </div>
+                </div>
               ) : buildings.length === 0 ? (
-                <div className="text-center py-8">
-                  <Building className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
+                <div className="text-center py-12">
+                  <Building className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground text-lg">
                     {selectedDistrict ? 'لا توجد مباني في هذه المنطقة' : 'الرجاء اختيار منطقة لعرض المباني'}
                   </p>
                 </div>
               ) : (
-                buildings.map(building => (
-                  <div
-                    key={building.id}
-                    onClick={() => {
-                      const newSelection = selectedBuildings.includes(building.id)
-                        ? selectedBuildings.filter(id => id !== building.id)
-                        : [...selectedBuildings, building.id];
-                      setSelectedBuildings(newSelection);
-                    }}
-                    className={`p-3 mb-2 border rounded-md cursor-pointer flex justify-between items-center transition-all ${
-                      selectedBuildings.includes(building.id) 
-                        ? 'bg-primary/10 border-primary shadow-sm' 
-                        : 'hover:bg-muted/50'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-semibold">
-                        {building.districts?.name_ar} - المبنى رقم {building.building_number}
-                      </p>
-                      {building.address && (
-                        <p className="text-xs text-muted-foreground">{building.address}</p>
+                <div className="space-y-3">
+                  {buildings.map(building => (
+                    <div
+                      key={building.id}
+                      onClick={() => {
+                        const newSelection = selectedBuildings.includes(building.id)
+                          ? selectedBuildings.filter(id => id !== building.id)
+                          : [...selectedBuildings, building.id];
+                        setSelectedBuildings(newSelection);
+                      }}
+                      className={`p-4 border rounded-lg cursor-pointer flex justify-between items-center transition-smooth ${
+                        selectedBuildings.includes(building.id) 
+                          ? 'bg-primary/10 border-primary shadow-campaign scale-[1.02]' 
+                          : 'hover:bg-muted/50 hover:shadow-card hover:scale-[1.01]'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <p className="font-semibold text-foreground">
+                          {building.district_name} - المبنى رقم {building.building_number}
+                        </p>
+                        {building.address && (
+                          <p className="text-sm text-muted-foreground">{building.address}</p>
+                        )}
+                        <p className="text-sm">
+                          {building.representative_name ? (
+                            <span className="status-success">معين لـ: {building.representative_name}</span>
+                          ) : (
+                            <span className="status-progress">غير معين</span>
+                          )}
+                        </p>
+                      </div>
+                      {selectedBuildings.includes(building.id) && (
+                        <CheckCircle className="w-6 h-6 text-primary animate-pulse" />
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        {building.profiles?.full_name ? 
-                          `معين لـ: ${building.profiles.full_name}` : 
-                          'غير معين'
-                        }
-                      </p>
                     </div>
-                    {selectedBuildings.includes(building.id) && (
-                      <CheckCircle className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center pt-4">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setCurrentPage(p => p - 1)} 
-                  disabled={currentPage === 0}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <span className="mx-4 text-sm">
-                  صفحة {currentPage + 1} من {totalPages}
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setCurrentPage(p => p + 1)} 
-                  disabled={currentPage >= totalPages - 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center justify-center pt-6 border-t">
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setCurrentPage(p => p - 1)} 
+                    disabled={currentPage === 0}
+                    className="shadow-card hover:shadow-campaign"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <div className="px-4 py-2 bg-muted rounded-lg text-sm font-medium">
+                    صفحة {currentPage + 1} من {totalPages}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => setCurrentPage(p => p + 1)} 
+                    disabled={currentPage >= totalPages - 1}
+                    className="shadow-card hover:shadow-campaign"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

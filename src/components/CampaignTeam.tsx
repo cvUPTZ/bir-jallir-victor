@@ -20,39 +20,66 @@ const CampaignTeam = () => {
         // Fetch coordinators from buildings assigned to representatives
         const { data: buildings, error: buildingsError } = await supabase
           .from('buildings')
-          .select(`
-            assigned_representative_id,
-            profiles!inner(full_name),
-            cities!inner(name_ar)
-          `)
+          .select('assigned_representative_id')
           .not('assigned_representative_id', 'is', null);
 
         if (buildingsError) throw buildingsError;
 
-        // Group buildings by representative
-        const repGroups = (buildings || []).reduce((acc: any, building: any) => {
-          const repId = building.assigned_representative_id;
-          if (!acc[repId]) {
-            acc[repId] = {
-              name: building.profiles.full_name,
-              areas: new Set(),
-              buildingCount: 0
+        // Get unique representative IDs
+        const uniqueRepIds = [...new Set(buildings?.map(b => b.assigned_representative_id).filter(Boolean))];
+        
+        if (uniqueRepIds.length === 0) {
+          setCoordinators([]);
+          setError(null);
+          return;
+        }
+
+        // Fetch representative details
+        const { data: representatives, error: repsError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', uniqueRepIds);
+
+        if (repsError) throw repsError;
+
+        // Get building counts and city info for each representative
+        const coordinatorsData = await Promise.all(
+          (representatives || []).map(async (rep) => {
+            // Get buildings for this representative with district info
+            const { data: repBuildings, error: repBuildingsError } = await supabase
+              .from('buildings')
+              .select('id, district_id')
+              .eq('assigned_representative_id', rep.id);
+
+            if (repBuildingsError) {
+              console.error('Error fetching rep buildings:', repBuildingsError);
+              return null;
+            }
+
+            // Get unique district IDs for this representative
+            const districtIds = [...new Set((repBuildings || []).map(b => b.district_id).filter(Boolean))];
+            
+            let areas: string[] = [];
+            if (districtIds.length > 0) {
+              const { data: districts } = await supabase
+                .from('districts')
+                .select('name_ar')
+                .in('id', districtIds);
+              
+              areas = (districts || []).map(d => d.name_ar);
+            }
+
+            return {
+              name: rep.full_name,
+              area: areas.join(', ') || 'غير محدد',
+              progress: Math.floor(Math.random() * 100),
+              target: (repBuildings?.length || 0) * 10,
+              accepted: Math.floor(Math.random() * (repBuildings?.length || 1) * 5)
             };
-          }
-          acc[repId].areas.add(building.cities.name_ar);
-          acc[repId].buildingCount++;
-          return acc;
-        }, {});
+          })
+        );
 
-        const processedActive = Object.values(repGroups).map((rep: any) => ({
-          name: rep.name,
-          area: Array.from(rep.areas).join(', '),
-          progress: Math.floor(Math.random() * 100),
-          target: rep.buildingCount * 10, // Assume 10 targets per building
-          accepted: Math.floor(Math.random() * rep.buildingCount * 5)
-        }));
-
-        setCoordinators(processedActive);
+        setCoordinators(coordinatorsData.filter(Boolean));
 
         // Fetch vacant areas (districts without coordinators)
         const { data: vacant, error: vacantError } = await supabase
