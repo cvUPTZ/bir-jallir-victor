@@ -32,7 +32,7 @@ interface Building {
   district_id: string;
   assigned_representative_id: string | null;
   address: string | null;
-  district?: { name_ar: string }; // Changed from district to cities
+  districts?: { name_ar: string }; // This matches the query structure
   profiles?: { full_name: string };
 }
 
@@ -71,9 +71,9 @@ const AdminAssignmentManager = () => {
       if (repsError) throw repsError;
       setRepresentatives(repsData || []);
 
-      // Fetch districts/cities - Updated to use cities table
+      // Fetch districts
       const { data: districtsData, error: districtsError } = await supabase
-        .from('districts') // Changed from 'districts' to 'cities'
+        .from('districts')
         .select('*')
         .order('name_ar');
       if (districtsError) throw districtsError;
@@ -89,46 +89,63 @@ const AdminAssignmentManager = () => {
   }, [toast]);
 
   const fetchBuildings = useCallback(async (page: number, districtFilter?: string) => {
-  setLoading(true);
-  try {
-    const from = page * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    let query = supabase
-      .from('buildings')
-      .select(`
-        *,
-        districts!inner(name_ar),
-        profiles(full_name)
-      `, { count: 'exact' })
-      .range(from, to);
-    if (districtFilter) {
-      query = query.eq('district_id', districtFilter);
+    setLoading(true);
+    try {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      
+      let query = supabase
+        .from('buildings')
+        .select(`
+          *,
+          districts!inner(name_ar),
+          profiles(full_name)
+        `, { count: 'exact' })
+        .range(from, to)
+        .order('building_number');
+      
+      if (districtFilter) {
+        query = query.eq('district_id', districtFilter);
+      }
+      
+      const { data, error, count } = await query;
+      if (error) throw error;
+      
+      console.log('Fetched buildings data:', data); // Debug log
+      
+      const formattedBuildings = data?.map((building: any) => ({
+        ...building,
+        districts: building.districts, // Keep the districts reference as is
+        profiles: building.profiles
+      })) || [];
+      
+      setBuildings(formattedBuildings);
+      setTotalBuildings(count || 0);
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+      const message = error instanceof Error ? error.message : "خطأ في تحميل المباني";
+      toast({ variant: "destructive", title: "خطأ", description: message });
+    } finally {
+      setLoading(false);
     }
-    const { data, error, count } = await query;
-    if (error) throw error;
-    const formattedBuildings = data?.map((building: any) => ({
-      ...building,
-      districts: building.districts, // Keep cities reference
-      profiles: building.profiles
-    })) || [];
-    setBuildings(formattedBuildings);
-    setTotalBuildings(count || 0);
-  } catch (error) {
-    console.error('Error fetching buildings:', error);
-    const message = error instanceof Error ? error.message : "خطأ في تحميل المباني";
-    toast({ variant: "destructive", title: "خطأ", description: message });
-  } finally {
-    setLoading(false);
-  }
-}, [toast]);
+  }, [toast]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   useEffect(() => {
-    fetchBuildings(currentPage, selectedDistrict);
-  }, [fetchBuildings, currentPage, selectedDistrict]);
+    if (selectedDistrict) {
+      setCurrentPage(0); // Reset to first page when district changes
+      fetchBuildings(0, selectedDistrict);
+    }
+  }, [fetchBuildings, selectedDistrict]);
+
+  useEffect(() => {
+    if (selectedDistrict) {
+      fetchBuildings(currentPage, selectedDistrict);
+    }
+  }, [fetchBuildings, currentPage]);
 
   const handleAssignBuildings = async () => {
     if (!selectedRep || selectedBuildings.length === 0) {
@@ -224,6 +241,7 @@ const AdminAssignmentManager = () => {
                 <SelectValue placeholder="اختر المنطقة..." />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">جميع المناطق</SelectItem>
                 {districts.map(district => (
                   <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
                 ))}
@@ -339,7 +357,12 @@ const AdminAssignmentManager = () => {
               {loading ? (
                 <p>جاري تحميل المباني...</p>
               ) : buildings.length === 0 ? (
-                <p className="text-muted-foreground">لا توجد مباني في هذه المنطقة</p>
+                <div className="text-center py-8">
+                  <Building className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">
+                    {selectedDistrict ? 'لا توجد مباني في هذه المنطقة' : 'الرجاء اختيار منطقة لعرض المباني'}
+                  </p>
+                </div>
               ) : (
                 buildings.map(building => (
                   <div
@@ -358,14 +381,14 @@ const AdminAssignmentManager = () => {
                   >
                     <div>
                       <p className="font-semibold">
-                        {building.district?.name_ar} - المبنى رقم {building.building_number}
+                        {building.districts?.name_ar} - المبنى رقم {building.building_number}
                       </p>
                       {building.address && (
                         <p className="text-xs text-muted-foreground">{building.address}</p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {building.representative?.full_name ? 
-                          `معين لـ: ${building.representative.full_name}` : 
+                        {building.profiles?.full_name ? 
+                          `معين لـ: ${building.profiles.full_name}` : 
                           'غير معين'
                         }
                       </p>
@@ -377,27 +400,31 @@ const AdminAssignmentManager = () => {
                 ))
               )}
             </div>
-            <div className="flex items-center justify-center pt-4">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => setCurrentPage(p => p - 1)} 
-                disabled={currentPage === 0}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <span className="mx-4 text-sm">
-                صفحة {currentPage + 1} من {totalPages}
-              </span>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => setCurrentPage(p => p + 1)} 
-                disabled={currentPage >= totalPages - 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center pt-4">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setCurrentPage(p => p - 1)} 
+                  disabled={currentPage === 0}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <span className="mx-4 text-sm">
+                  صفحة {currentPage + 1} من {totalPages}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => setCurrentPage(p => p + 1)} 
+                  disabled={currentPage >= totalPages - 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
