@@ -98,7 +98,7 @@ const AdminAssignmentManager = () => {
         .from('buildings')
         .select(`
           *,
-          cities!inner(name_ar),
+          districts!inner(name_ar),
           profiles(full_name)
         `, { count: 'exact' })
         .order('building_number')
