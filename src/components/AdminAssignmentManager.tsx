@@ -185,12 +185,12 @@ const AdminAssignmentManager = () => {
 
     try {
       const { error } = await supabase
-        .from('buildings')
-        .insert({
-          building_number: parseInt(newBuildingNumber),
-          city_id: selectedCity,
-          address: newBuildingAddress || null
-        });
+  .from('buildings')
+  .insert({
+    building_number: newBuildingNumber,
+    city_id: selectedCity,
+    address: newBuildingAddress || null
+  });
 
       if (error) throw error;
 
