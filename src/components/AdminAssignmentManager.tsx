@@ -89,45 +89,38 @@ const AdminAssignmentManager = () => {
   }, [toast]);
 
   const fetchBuildings = useCallback(async (page: number, districtFilter?: string) => {
-    setLoading(true);
-    try {
-      const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-
-      let query = supabase
-        .from('buildings')
-        .select(`
-          *,
-          districts!inner(name_ar),
-          profiles(full_name)
-        `, { count: 'exact' })
-        .order('building_number')
-        .range(from, to);
-
-      if (districtFilter) {
-        query = query.eq('district_id', districtFilter);
-      }
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-
-      const formattedBuildings = data?.map((building: any) => ({
-        ...building,
-        districts: building.districts, // Keep cities reference
-        profiles: building.profiles
-      })) || [];
-
-      setBuildings(formattedBuildings);
-      setTotalBuildings(count || 0);
-
-    } catch (error) {
-      console.error('Error fetching buildings:', error);
-      const message = error instanceof Error ? error.message : "خطأ في تحميل المباني";
-      toast({ variant: "destructive", title: "خطأ", description: message });
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    let query = supabase
+      .from('buildings')
+      .select(`
+        *,
+        districts!inner(name_ar),
+        profiles(full_name)
+      `, { count: 'exact' })
+      .range(from, to);
+    if (districtFilter) {
+      query = query.eq('district_id', districtFilter);
     }
-  }, [toast]);
+    const { data, error, count } = await query;
+    if (error) throw error;
+    const formattedBuildings = data?.map((building: any) => ({
+      ...building,
+      districts: building.districts, // Keep cities reference
+      profiles: building.profiles
+    })) || [];
+    setBuildings(formattedBuildings);
+    setTotalBuildings(count || 0);
+  } catch (error) {
+    console.error('Error fetching buildings:', error);
+    const message = error instanceof Error ? error.message : "خطأ في تحميل المباني";
+    toast({ variant: "destructive", title: "خطأ", description: message });
+  } finally {
+    setLoading(false);
+  }
+}, [toast]);
 
   useEffect(() => {
     fetchData();
