@@ -245,11 +245,12 @@ const AdminAssignmentManager = () => {
                 <SelectValue placeholder="اختر المنطقة..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع المناطق</SelectItem>
-                {districts.map(district => (
-                  <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
-                ))}
-              </SelectContent>
+  {/* The placeholder will now be shown when no district is selected. */}
+  {/* Ensure your state (selectedDistrict) is initialized to '' */}
+  {districts.map(district => (
+    <SelectItem key={district.id} value={district.id}>{district.name_ar}</SelectItem>
+  ))}
+</SelectContent>
             </Select>
             
             <Dialog open={showAddBuilding} onOpenChange={setShowAddBuilding}>
