@@ -31,7 +31,7 @@ interface CensusFormData {
   building_code: string;
   apartment_number: string;
   head_of_household: string;
-  phone_number: string;
+  adults_over_18: number;
   has_voting_card: 'yes' | 'no' | null;
   notes: string;
 }
@@ -99,7 +99,7 @@ const Census = () => {
     building_code: '',
     apartment_number: '',
     head_of_household: '',
-    phone_number: '',
+    adults_over_18: 1,
     has_voting_card: null,
     notes: ''
   });
@@ -170,10 +170,9 @@ const Census = () => {
         building_code: formData.building_code,
         apartment_number: formData.apartment_number,
         head_of_household: formData.head_of_household,
-        phone_number: formData.phone_number,
-        voters_with_cards: formData.has_voting_card === 'yes' ? 1 : 0,
-        voters_without_cards: formData.has_voting_card === 'no' ? 1 : 0,
-        total_potential_voters: 1,
+        voters_with_cards: formData.has_voting_card === 'yes' ? formData.adults_over_18 : 0,
+        voters_without_cards: formData.has_voting_card === 'no' ? formData.adults_over_18 : 0,
+        total_potential_voters: formData.adults_over_18,
         notes: formData.notes,
         surveyed_by: profile.id,
         surveyed_at: new Date().toISOString(),
@@ -193,7 +192,7 @@ const Census = () => {
         building_code: selectedBuilding,
         apartment_number: '',
         head_of_household: '',
-        phone_number: '',
+        adults_over_18: 1,
         has_voting_card: null,
         notes: ''
       });
@@ -217,15 +216,15 @@ const Census = () => {
   const availableBuildings = selectedSquareData?.building_codes || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card className="card-premium border-primary/20">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
-                <CardTitle className="flex items-center gap-3 text-2xl text-primary">
-                    <Users className="w-7 h-7" />
+                <CardTitle className="flex items-center gap-3 text-xl sm:text-2xl text-primary">
+                    <Users className="w-6 h-6 sm:w-7 sm:h-7" />
                     إحصاء و تسجيل الناخبين
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-sm sm:text-base">
                     تسجيل بيانات الناخبين بشكل فردي حسب العمارات والمربعات السكنية
                 </CardDescription>
             </div>
@@ -233,12 +232,12 @@ const Census = () => {
         </CardHeader>
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Selection Panel */}
-        <div className="md:col-span-1 space-y-4">
+        <div className="lg:col-span-1 space-y-4">
           <Card className="card-accent">
             <CardHeader>
-              <CardTitle className="text-xl">1. اختيار المنطقة</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">1. اختيار المنطقة</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -279,52 +278,54 @@ const Census = () => {
         </div>
 
         {/* Census Form */}
-        <div className="md:col-span-2">
+        <div className="lg:col-span-2">
           <Card className="card-premium">
             <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-3">
-                <UserPlus className="w-6 h-6 text-primary" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
+                <UserPlus className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 2. بيانات الناخب
               </CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="apartment_number" className="text-sm font-medium">رقم الشقة</Label>
-                    <Input 
-                      id="apartment_number" 
-                      value={formData.apartment_number} 
-                      onChange={e => setFormData(p => ({ ...p, apartment_number: e.target.value }))} 
-                      placeholder="رقم الشقة" 
-                      required 
-                      className="shadow-card"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="head_of_household" className="text-sm font-medium">الاسم الكامل</Label>
-                    <Input 
-                      id="head_of_household" 
-                      value={formData.head_of_household} 
-                      onChange={e => setFormData(p => ({ ...p, head_of_household: e.target.value }))} 
-                      placeholder="اسم الناخب الكامل" 
-                      required 
-                      className="shadow-card"
-                    />
-                  </div>
-                </div>
+                 <div className="grid md:grid-cols-2 gap-4">
+                   <div className="space-y-3">
+                     <Label htmlFor="apartment_number" className="text-sm font-medium">رقم الشقة</Label>
+                     <Input 
+                       id="apartment_number" 
+                       value={formData.apartment_number} 
+                       onChange={e => setFormData(p => ({ ...p, apartment_number: e.target.value }))} 
+                       placeholder="رقم الشقة" 
+                       required 
+                       className="shadow-card"
+                     />
+                   </div>
+                   <div className="space-y-3">
+                     <Label htmlFor="head_of_household" className="text-sm font-medium">مسؤول البيت</Label>
+                     <Input 
+                       id="head_of_household" 
+                       value={formData.head_of_household} 
+                       onChange={e => setFormData(p => ({ ...p, head_of_household: e.target.value }))} 
+                       placeholder="اسم مسؤول البيت" 
+                       required 
+                       className="shadow-card"
+                     />
+                   </div>
+                 </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="phone_number" className="text-sm font-medium">رقم الهاتف (اختياري)</Label>
-                  <Input 
-                    id="phone_number" 
-                    value={formData.phone_number} 
-                    onChange={e => setFormData(p => ({ ...p, phone_number: e.target.value }))} 
-                    placeholder="رقم هاتف الناخب" 
-                    type="tel" 
-                    className="shadow-card"
-                  />
-                </div>
+                 <div className="space-y-3">
+                   <Label htmlFor="adults_over_18" className="text-sm font-medium">عدد الأفراد فوق 18 سنة</Label>
+                   <Input 
+                     id="adults_over_18" 
+                     type="number"
+                     min="1"
+                     value={formData.adults_over_18} 
+                     onChange={e => setFormData(p => ({ ...p, adults_over_18: parseInt(e.target.value) || 1 }))} 
+                     placeholder="عدد الأفراد المؤهلين للانتخاب" 
+                     required 
+                     className="shadow-card"
+                   />
+                 </div>
 
                 <div className="space-y-4">
                     <Label className="text-sm font-medium">هل يحوز على بطاقة انتخاب؟</Label>
