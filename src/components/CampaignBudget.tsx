@@ -1,19 +1,48 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 
 const CampaignBudget = () => {
-  const budgetItems = [
-    {
-      category: "الدعاية والإعلان",
-      allocated: 150000,
-      spent: 95000,
-      percentage: 35,
-      description: "ملصقات، راديو، صحف",
-      priority: "عالية",
-      status: "نشط"
-    },
+  const [budgetItems, setBudgetItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBudgetData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('budget_items')
+          .select('*')
+          .order('allocated', { ascending: false });
+
+        if (error) throw error;
+
+        const processedItems = (data || []).map(item => ({
+          category: item.category,
+          allocated: item.allocated,
+          spent: item.spent,
+          percentage: Math.round((item.allocated / (data?.reduce((sum, d) => sum + d.allocated, 0) || 1)) * 100),
+          description: item.description || '',
+          priority: item.priority,
+          status: item.status
+        }));
+
+        setBudgetItems(processedItems);
+      } catch (error) {
+        console.error('Error fetching budget data:', error);
+        // Fallback to default data
+        setBudgetItems([
+          {
+            category: "الدعاية والإعلان",
+            allocated: 150000,
+            spent: 95000,
+            percentage: 35,
+            description: "ملصقات، راديو، صحف",
+            priority: "عالية",
+            status: "نشط"
+          },
     {
       category: "اللوجستيات",
       allocated: 100000,
@@ -40,17 +69,24 @@ const CampaignBudget = () => {
       description: "منسقين، متطوعين",
       priority: "عالية",
       status: "نشط"
-    },
-    {
-      category: "طوارئ",
-      allocated: 20000,
-      spent: 2000,
-      percentage: 5,
-      description: "أحداث غير متوقعة",
-      priority: "منخفضة",
-      status: "احتياطي"
-    }
-  ];
+          },
+          {
+            category: "طوارئ",
+            allocated: 20000,
+            spent: 2000,
+            percentage: 5,
+            description: "أحداث غير متوقعة",
+            priority: "منخفضة",
+            status: "احتياطي"
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBudgetData();
+  }, []);
 
   const totalBudget = 410000;
   const totalSpent = budgetItems.reduce((sum, item) => sum + item.spent, 0);
@@ -92,6 +128,10 @@ const CampaignBudget = () => {
       default: return "outline";
     }
   };
+
+  if (loading) {
+    return <div>جاري تحميل بيانات الميزانية...</div>;
+  }
 
   return (
     <div className="space-y-6">

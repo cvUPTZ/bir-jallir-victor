@@ -17,30 +17,52 @@ const CampaignTeam = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: active, error: activeError } = await supabase
-          .from('profiles')
-          .select('full_name, assigned_district')
-          .eq('role', 'representative')
-          .not('assigned_district', 'eq', null);
+        // Fetch coordinators from buildings assigned to representatives
+        const { data: buildings, error: buildingsError } = await supabase
+          .from('buildings')
+          .select(`
+            assigned_representative_id,
+            profiles!inner(full_name),
+            cities!inner(name_ar)
+          `)
+          .not('assigned_representative_id', 'is', null);
 
+        if (buildingsError) throw buildingsError;
+
+        // Group buildings by representative
+        const repGroups = (buildings || []).reduce((acc: any, building: any) => {
+          const repId = building.assigned_representative_id;
+          if (!acc[repId]) {
+            acc[repId] = {
+              name: building.profiles.full_name,
+              areas: new Set(),
+              buildingCount: 0
+            };
+          }
+          acc[repId].areas.add(building.cities.name_ar);
+          acc[repId].buildingCount++;
+          return acc;
+        }, {});
+
+        const processedActive = Object.values(repGroups).map((rep: any) => ({
+          name: rep.name,
+          area: Array.from(rep.areas).join(', '),
+          progress: Math.floor(Math.random() * 100),
+          target: rep.buildingCount * 10, // Assume 10 targets per building
+          accepted: Math.floor(Math.random() * rep.buildingCount * 5)
+        }));
+
+        setCoordinators(processedActive);
+
+        // Fetch vacant areas (districts without coordinators)
         const { data: vacant, error: vacantError } = await supabase
           .from('districts')
           .select('name_ar, target_votes, priority_level')
           .is('coordinator_name', null)
           .order('target_votes', { ascending: false });
 
-        if (activeError) throw activeError;
         if (vacantError) throw vacantError;
-
-        const processedActive = (active || []).map(item => ({
-          name: item.full_name,
-          area: item.assigned_district,
-          progress: Math.floor(Math.random() * 100),
-          target: 100,
-          accepted: Math.floor(Math.random() * 30)
-        }));
-        setCoordinators(processedActive);
-        setVacantAreas(vacant);
+        setVacantAreas(vacant || []);
       } catch (e) {
         const message = e instanceof Error ? e.message : "An unknown error occurred";
         setError(message);

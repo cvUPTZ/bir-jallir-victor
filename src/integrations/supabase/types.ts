@@ -14,6 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_items: {
+        Row: {
+          allocated: number
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          priority: string | null
+          spent: number
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          allocated?: number
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string | null
+          spent?: number
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allocated?: number
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string | null
+          spent?: number
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      buildings: {
+        Row: {
+          address: string | null
+          assigned_representative_id: string | null
+          building_number: number
+          city_id: string | null
+          created_at: string
+          id: string
+          surveyed_apartments: number | null
+          total_apartments: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_representative_id?: string | null
+          building_number: number
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          surveyed_apartments?: number | null
+          total_apartments?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          assigned_representative_id?: string | null
+          building_number?: number
+          city_id?: string | null
+          created_at?: string
+          id?: string
+          surveyed_apartments?: number | null
+          total_apartments?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buildings_assigned_representative_id_fkey"
+            columns: ["assigned_representative_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buildings_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          created_at: string
+          id: string
+          name_ar: string
+          name_fr: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name_ar: string
+          name_fr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name_ar?: string
+          name_fr?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       districts: {
         Row: {
           coordinator_name: string | null
@@ -87,6 +198,8 @@ export type Database = {
         Row: {
           assigned_representative_id: string | null
           building_codes: string[] | null
+          building_id: string | null
+          city_id: string | null
           created_at: string
           district_id: string | null
           id: string
@@ -98,6 +211,8 @@ export type Database = {
         Insert: {
           assigned_representative_id?: string | null
           building_codes?: string[] | null
+          building_id?: string | null
+          city_id?: string | null
           created_at?: string
           district_id?: string | null
           id?: string
@@ -109,6 +224,8 @@ export type Database = {
         Update: {
           assigned_representative_id?: string | null
           building_codes?: string[] | null
+          building_id?: string | null
+          city_id?: string | null
           created_at?: string
           district_id?: string | null
           id?: string
@@ -126,6 +243,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "residential_squares_building_id_fkey"
+            columns: ["building_id"]
+            isOneToOne: false
+            referencedRelation: "buildings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "residential_squares_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "residential_squares_district_id_fkey"
             columns: ["district_id"]
             isOneToOne: false
@@ -133,6 +264,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      strategy_items: {
+        Row: {
+          created_at: string
+          id: string
+          priority: string | null
+          progress: number | null
+          status: string | null
+          tactics: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          priority?: string | null
+          progress?: number | null
+          status?: string | null
+          tactics?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          priority?: string | null
+          progress?: number | null
+          status?: string | null
+          tactics?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          responsibilities: string[] | null
+          role: string
+          status: string | null
+          team_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          responsibilities?: string[] | null
+          role: string
+          status?: string | null
+          team_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          responsibilities?: string[] | null
+          role?: string
+          status?: string | null
+          team_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       voter_census: {
         Row: {
