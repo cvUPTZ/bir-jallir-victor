@@ -199,23 +199,6 @@ const AdminTeamManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>الدور</Label>
-                <Input
-                  value={formData.role}
-                  onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                  placeholder="دور العضو"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>المسؤوليات</Label>
-                <Textarea
-                  value={formData.responsibilities}
-                  onChange={(e) => setFormData(prev => ({ ...prev, responsibilities: e.target.value }))}
-                  placeholder="مسؤولية واحدة في كل سطر"
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label>نوع الفريق</Label>
                 <Select value={formData.team_type} onValueChange={(value) => setFormData(prev => ({ ...prev, team_type: value }))}>
                   <SelectTrigger>
@@ -224,6 +207,25 @@ const AdminTeamManager = () => {
                   <SelectContent>
                     <SelectItem value="قيادة">القيادة المركزية</SelectItem>
                     <SelectItem value="متخصص">فريق متخصص</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>الدور</Label>
+                <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الدور" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="مدير حملة">مدير حملة</SelectItem>
+                    <SelectItem value="فريق الإعلام">فريق الإعلام</SelectItem>
+                    <SelectItem value="فريق التنسيق">فريق التنسيق</SelectItem>
+                    <SelectItem value="فرق اقليمية متخصصة">فرق اقليمية متخصصة</SelectItem>
+                    <SelectItem value="منسق حي">منسق حي</SelectItem>
+                    <SelectItem value="منسق جزئي للحي">منسق جزئي للحي</SelectItem>
+                    <SelectItem value="منسق أصوات حرة">منسق أصوات حرة</SelectItem>
+                    <SelectItem value="مراقب مركز">مراقب مركز</SelectItem>
+                    <SelectItem value="مراقب امام المركز">مراقب امام المركز</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -238,6 +240,15 @@ const AdminTeamManager = () => {
                     <SelectItem value="غير نشط">غير نشط</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>المسؤوليات</Label>
+                <Textarea
+                  value={formData.responsibilities}
+                  onChange={(e) => setFormData(prev => ({ ...prev, responsibilities: e.target.value }))}
+                  placeholder="مسؤولية واحدة في كل سطر"
+                  rows={3}
+                />
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleSave} className="flex-1">

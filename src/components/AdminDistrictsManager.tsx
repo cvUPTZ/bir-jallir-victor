@@ -210,19 +210,11 @@ const AdminDistrictsManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>الاسم بالفرنسية</Label>
-                <Input
-                  value={formData.name_fr}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name_fr: e.target.value }))}
-                  placeholder="Nom de la région"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>اسم المنسق</Label>
+                <Label>المنسقين</Label>
                 <Input
                   value={formData.coordinator_name}
                   onChange={(e) => setFormData(prev => ({ ...prev, coordinator_name: e.target.value }))}
-                  placeholder="اسم المنسق المسؤول"
+                  placeholder="أسماء المنسقين (مفصولة بفاصلة)"
                 />
               </div>
               <div className="space-y-2">

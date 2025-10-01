@@ -36,7 +36,7 @@ const AdminStrategyManager = () => {
     title: '',
     priority: 'متوسطة',
     progress: '0',
-    status: 'تطوير',
+    status: 'طور',
     tactics: ''
   });
   const { toast } = useToast();
@@ -157,7 +157,7 @@ const AdminStrategyManager = () => {
       title: '',
       priority: 'متوسطة',
       progress: '0',
-      status: 'تطوير',
+      status: 'طور',
       tactics: ''
     });
     setEditingStrategy(null);
@@ -187,9 +187,9 @@ const AdminStrategyManager = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "نشطة": return "default";
-      case "تطوير": return "secondary";
-      case "مكتملة": return "outline";
+      case "مكتملة": return "default";
+      case "قيد التنفيذ": return "secondary";
+      case "طور": return "outline";
       default: return "secondary";
     }
   };
@@ -228,33 +228,18 @@ const AdminStrategyManager = () => {
                   placeholder="مثل: استراتيجية التواصل المباشر"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>الأولوية</Label>
-                  <Select value={formData.priority} onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="عالية">عالية</SelectItem>
-                      <SelectItem value="متوسطة">متوسطة</SelectItem>
-                      <SelectItem value="منخفضة">منخفضة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>الحالة</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="نشطة">نشطة</SelectItem>
-                      <SelectItem value="تطوير">في التطوير</SelectItem>
-                      <SelectItem value="مكتملة">مكتملة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>الحالة</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="مكتملة">مكتملة</SelectItem>
+                    <SelectItem value="قيد التنفيذ">قيد التنفيذ</SelectItem>
+                    <SelectItem value="طور">طور</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>نسبة التقدم (%)</Label>

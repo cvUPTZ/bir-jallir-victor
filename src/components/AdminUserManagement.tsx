@@ -32,11 +32,27 @@ const AdminUserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // The rpc call is needed to join with auth.users to get the email
-      const { data, error } = await supabase.rpc('get_users_with_email');
+      // Fetch profiles with their details
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, user_id');
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch email from auth metadata for each user
+      const usersWithEmails = await Promise.all(
+        (profiles || []).map(async (profile) => {
+          const { data: authData } = await supabase.auth.admin.getUserById(profile.user_id);
+          return {
+            id: profile.id,
+            full_name: profile.full_name,
+            email: authData?.user?.email || 'N/A',
+            role: profile.role
+          };
+        })
+      );
+
+      setUsers(usersWithEmails);
     } catch (error) {
       const message = error instanceof Error ? error.message : "خطأ في تحميل المستخدمين";
       toast({ variant: "destructive", title: "خطأ", description: message });

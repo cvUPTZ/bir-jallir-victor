@@ -227,7 +227,7 @@ const AdminAssignmentManager = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-2xl">
             <MapPin className="w-7 h-7 text-primary" />
-            إدارة تعيين المباني للمندوبين
+            إدارة التعيين
           </CardTitle>
         </CardHeader>
         <CardContent>
