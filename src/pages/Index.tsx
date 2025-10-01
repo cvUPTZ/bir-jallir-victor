@@ -49,8 +49,8 @@ const Index = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الفرق</SelectItem>
-                  <SelectItem value="قيادة">القيادة المركزية</SelectItem>
-                  <SelectItem value="متخصص">الفرق المتخصصة</SelectItem>
+                  <SelectItem value="قيادة مركزية">القيادة المركزية</SelectItem>
+                  <SelectItem value="فرق إقليمية متخصصة">الفرق المتخصصة</SelectItem>
                 </SelectContent>
               </Select>
             </div>

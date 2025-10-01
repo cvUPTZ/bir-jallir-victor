@@ -111,14 +111,14 @@ const CampaignTeam = ({ teamFilter = "all" }: CampaignTeamProps) => {
 
   return (
     <div className="space-y-6" dir="rtl">
-      {(teamFilter === "all" || teamFilter === "قيادة") && (
+      {(teamFilter === "all" || teamFilter === "قيادة مركزية") && (
         <Card className="card-premium">
           <CardHeader><CardTitle className="flex items-center gap-3 text-xl"><Star className="h-6 w-6 text-primary" /> القيادة المركزية</CardTitle></CardHeader>
           <CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{leadership.map((l, i) => <div key={i} className="p-4 border rounded-lg card-accent transition-smooth hover:shadow-card"><h3 className="font-semibold text-lg">{l.name}</h3><p className="text-sm text-muted-foreground">{l.role}</p></div>)}</div></CardContent>
         </Card>
       )}
 
-      {(teamFilter === "all" || teamFilter === "قيادة") && (
+      {(teamFilter === "all" || teamFilter === "قيادة مركزية") && (
         <Card className="card-premium">
           <CardHeader><CardTitle className="flex items-center gap-3 text-xl"><MapPin className="h-6 w-6 text-primary" /> المنسقون الإقليميون</CardTitle></CardHeader>
           <CardContent>
@@ -144,14 +144,14 @@ const CampaignTeam = ({ teamFilter = "all" }: CampaignTeamProps) => {
         </Card>
       )}
 
-      {(teamFilter === "all" || teamFilter === "متخصص") && (
+      {(teamFilter === "all" || teamFilter === "فرق إقليمية متخصصة") && (
         <Card className="card-premium">
           <CardHeader><CardTitle className="flex items-center gap-3 text-xl"><Users className="h-6 w-6 text-primary" /> الفرق المتخصصة</CardTitle></CardHeader>
           <CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{specializedTeams.map((t, i) => <div key={i} className="border rounded-lg p-4 card-accent transition-smooth hover:shadow-card"><h3 className="font-semibold text-lg">{t.name}</h3><p className="text-sm text-muted-foreground">القائد: {t.leader}</p></div>)}</div></CardContent>
         </Card>
       )}
 
-      {(teamFilter === "all" || teamFilter === "قيادة") && vacantAreas.length > 0 && (
+      {(teamFilter === "all" || teamFilter === "قيادة مركزية") && vacantAreas.length > 0 && (
         <Card className="border-warning card-premium">
           <CardHeader><CardTitle className="flex items-center gap-3 text-xl text-warning"><Target className="h-6 w-6" /> مناطق تحتاج منسقين</CardTitle></CardHeader>
           <CardContent>

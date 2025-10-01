@@ -30,7 +30,7 @@ const AdminTeamManager = () => {
     role: '',
     responsibilities: '',
     status: 'نشط',
-    team_type: 'متخصص'
+    team_type: 'فرق إقليمية متخصصة'
   });
   const { toast } = useToast();
 
@@ -127,7 +127,7 @@ const AdminTeamManager = () => {
       role: '',
       responsibilities: '',
       status: 'نشط',
-      team_type: 'متخصص'
+      team_type: 'فرق إقليمية متخصصة'
     });
     setEditingMember(null);
     setShowAddDialog(false);
@@ -155,8 +155,8 @@ const AdminTeamManager = () => {
 
   const getTeamTypeColor = (type: string) => {
     switch (type) {
-      case "قيادة": return "destructive";
-      case "متخصص": return "secondary";
+      case "قيادة مركزية": return "destructive";
+      case "فرق إقليمية متخصصة": return "secondary";
       default: return "outline";
     }
   };
@@ -165,8 +165,8 @@ const AdminTeamManager = () => {
     return <div>جاري تحميل أعضاء الفريق...</div>;
   }
 
-  const leadershipTeam = teamMembers.filter(member => member.team_type === 'قيادة');
-  const specializedTeams = teamMembers.filter(member => member.team_type === 'متخصص');
+  const leadershipTeam = teamMembers.filter(member => member.team_type === 'قيادة مركزية');
+  const specializedTeams = teamMembers.filter(member => member.team_type === 'فرق إقليمية متخصصة');
 
   return (
     <div className="space-y-6">
@@ -205,8 +205,8 @@ const AdminTeamManager = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="قيادة">القيادة المركزية</SelectItem>
-                    <SelectItem value="متخصص">فريق متخصص</SelectItem>
+                    <SelectItem value="قيادة مركزية">قيادة مركزية</SelectItem>
+                    <SelectItem value="فرق إقليمية متخصصة">فرق إقليمية متخصصة</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -220,12 +220,11 @@ const AdminTeamManager = () => {
                     <SelectItem value="مدير حملة">مدير حملة</SelectItem>
                     <SelectItem value="فريق الإعلام">فريق الإعلام</SelectItem>
                     <SelectItem value="فريق التنسيق">فريق التنسيق</SelectItem>
-                    <SelectItem value="فرق اقليمية متخصصة">فرق اقليمية متخصصة</SelectItem>
                     <SelectItem value="منسق حي">منسق حي</SelectItem>
                     <SelectItem value="منسق جزئي للحي">منسق جزئي للحي</SelectItem>
                     <SelectItem value="منسق أصوات حرة">منسق أصوات حرة</SelectItem>
                     <SelectItem value="مراقب مركز">مراقب مركز</SelectItem>
-                    <SelectItem value="مراقب امام المركز">مراقب امام المركز</SelectItem>
+                    <SelectItem value="مراقب أمام المركز">مراقب أمام المركز</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -317,12 +316,12 @@ const AdminTeamManager = () => {
         </CardContent>
       </Card>
 
-      {/* الفرق المتخصصة */}
+      {/* الفرق الإقليمية المتخصصة */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            الفرق المتخصصة
+            فرق إقليمية متخصصة
           </CardTitle>
         </CardHeader>
         <CardContent>
